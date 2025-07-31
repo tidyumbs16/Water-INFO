@@ -1,7 +1,12 @@
 import type { NextConfig } from "next";
 
+/** @type {import('next').NextConfig} */
 const nextConfig: NextConfig = {
-  /* config options here */
+  reactStrictMode: true,
+  productionBrowserSourceMaps: true,
+  transpilePackages: ['@heroui/dom-animation'],
 };
 
-export default nextConfig;
+module.exports = nextConfig;
+
+

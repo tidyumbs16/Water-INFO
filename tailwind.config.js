@@ -81,5 +81,42 @@ module.exports = {
       }
     }
   },
+    theme: {
+    extend: {
+      keyframes: {
+        float: {
+          '0%, 100%': { transform: 'translateY(0px)' },
+          '50%': { transform: 'translateY(-8px)' },
+        },
+      },
+      animation: {
+        float: 'float 4s ease-in-out infinite',
+      },
+      // เพิ่ม box-shadow สำหรับ glow effect
+      boxShadow: {
+        'cyan-400/20': '0 0 20px 5px rgba(34, 211, 238, 0.2)',
+      },
+    },
+  },
+theme: {
+    container: {
+      center: true,
+    },
+    extend: {
+      animation: {
+        float: 'float 3s ease-in-out infinite',
+      },
+      keyframes: {
+        float: {
+          '0%, 100%': { transform: 'translateY(0) rotate(45deg)' },
+          '50%': { transform: 'translateY(-15px) rotate(45deg)' },
+        },
+      },
+    },
+  },
+  plugins: [],
+};
+
+module.exports = {
   plugins: [],
 };
