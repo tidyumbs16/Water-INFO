@@ -1,261 +1,116 @@
-// src/app/api/admin/districts/route.ts
-// ตัวอย่าง API Route สำหรับจัดการข้อมูลเขต/อำเภอ (Districts)
-// พร้อมการบันทึกกิจกรรมลงใน Activity Log
+// app/api/admin/districts/route.ts
 
-import { NextResponse } from 'next/server';
-import { pool } from '@/lib/db'; // Import pool จากไฟล์ db.ts ของคุณ
-import { logActivity } from '@/lib/activityLogger'; // ฟังก์ชันสำหรับบันทึกกิจกรรมลงใน Activity Log
+import { NextRequest, NextResponse } from 'next/server';
+import { Pool } from 'pg';
+import { verifyToken, DecodedToken } from '@/lib/auth'; // ตรวจสอบว่า import ถูกต้อง
+import { District } from '../../../../../lib/definitions'; // ตรวจสอบว่า import ถูกต้อง
 
-// ฟังก์ชันจำลองสำหรับการดึง User ID จาก Request (คุณต้องปรับใช้ตามระบบ Authentication จริงของคุณ)
-// ในระบบจริง คุณจะทำการยืนยัน JWT Token และดึง user_id ออกมา
-async function getUserIdFromRequest(req: Request): Promise<string | null> {
-  const authHeader = req.headers.get('authorization');
-  if (authHeader && authHeader.startsWith('Bearer ')) {
-    const token = authHeader.split(' ')[1];
-    // TODO: ในระบบจริง คุณจะต้องทำการ verify token และ extract user ID
-    // ตัวอย่างง่ายๆ สำหรับการทดสอบ:
-    // const decodedToken = verify(token, process.env.JWT_SECRET);
-    // return decodedToken.userId;
-    return 'admin_user_001'; // ID ผู้ใช้จำลองสำหรับการทดสอบ
+// Initialize PostgreSQL connection pool
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+});
+
+// Helper function for authentication (ใช้ร่วมกับไฟล์ [id]/route.ts)
+const authenticateRequest = (req: NextRequest): DecodedToken | NextResponse => {
+  const authHeader = req.headers.get('Authorization');
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return NextResponse.json({ message: 'Unauthorized: No token provided or malformed header' }, { status: 401 });
   }
-  return null;
-}
+  const token = authHeader.split(' ')[1];
+  const decodedToken = verifyToken(token);
+  if (!decodedToken) {
+    return NextResponse.json({ message: 'Unauthorized: Invalid or expired token' }, { status: 401 });
+  }
+  return decodedToken;
+};
 
-// GET Request: ดึงข้อมูลเขต/อำเภอทั้งหมด หรือตาม ID
-export async function GET(req: Request) {
-  // ตรวจสอบว่า pool ถูก initialize หรือไม่
-  if (!pool) {
-    console.error('Database pool is not initialized. Cannot process GET request.');
-    return NextResponse.json({ message: 'Database connection not available.' }, { status: 500 });
+/**
+ * GET /api/admin/districts
+ * ดึงข้อมูลเขต/อำเภอทั้งหมด พร้อมการค้นหา
+ */
+export async function GET(request: NextRequest) {
+  const authResult = authenticateRequest(request);
+  if (authResult instanceof NextResponse) {
+    return authResult;
   }
 
   try {
-    const { searchParams } = new URL(req.url);
-    const id = searchParams.get('id'); // ดึง ID จาก Query Parameter (ถ้ามี)
+    const { searchParams } = new URL(request.url);
+    const searchTerm = searchParams.get('search') || '';
+
+    const queryParams: any[] = [];
+    let whereClause = '';
+
+    if (searchTerm) {
+      whereClause = `WHERE name ILIKE $1 OR province ILIKE $2 OR region ILIKE $3`;
+      const searchValue = `%${searchTerm}%`;
+      queryParams.push(searchValue, searchValue, searchValue);
+    }
+
+    const dataQuery = `
+      SELECT id, name, province, region, status, description, created_at, updated_at
+      FROM districts
+      ${whereClause}
+      ORDER BY updated_at DESC;
+    `;
 
     const client = await pool.connect();
     try {
-      let query = 'SELECT id, name, description FROM districts';
-      const params = [];
+      const dataResult = await client.query<District>(dataQuery, queryParams);
+      
+      // FIX: ส่งข้อมูลกลับเป็น Array ตรงๆ เพื่อให้เข้ากับโค้ด Frontend
+      return NextResponse.json(dataResult.rows);
 
-      if (id) {
-        query += ' WHERE id = $1';
-        params.push(id);
-      }
-
-      const result = await client.query(query, params);
-      return NextResponse.json(result.rows, { status: 200 });
-    } catch (dbError: any) {
-      console.error('Database error in GET /api/admin/districts:', dbError);
-      return NextResponse.json({ message: 'Failed to fetch districts', error: dbError.message }, { status: 500 });
     } finally {
       client.release();
     }
   } catch (error: any) {
-    console.error('Error in GET /api/admin/districts:', error);
-    return NextResponse.json({ message: 'Internal server error', error: error.message }, { status: 500 });
+    console.error('Error fetching districts:', error);
+    return NextResponse.json({ error: 'Failed to fetch districts' }, { status: 500 });
   }
 }
 
-
-// POST Request: สร้างเขต/อำเภอใหม่
-export async function POST(req: Request) {
-  // ตรวจสอบว่า pool ถูก initialize หรือไม่
-  if (!pool) {
-    console.error('Database pool is not initialized. Cannot process POST request.');
-    return NextResponse.json({ message: 'Database connection not available.' }, { status: 500 });
+/**
+ * POST /api/admin/districts
+ * สร้างเขต/อำเภอใหม่
+ */
+export async function POST(request: NextRequest) {
+  const authResult = authenticateRequest(request);
+  if (authResult instanceof NextResponse) {
+    return authResult;
   }
 
   try {
-    const { name, description } = await req.json();
-    const userId = await getUserIdFromRequest(req); // ดึง User ID จาก Request
+    const { name, province, region, status, description } = await request.json();
 
-    if (!userId) {
-      return NextResponse.json({ message: 'Unauthorized: User ID not found' }, { status: 401 });
+    if (!name || !province || !region) {
+        return NextResponse.json({ error: 'Name, province, and region are required fields.' }, { status: 400 });
     }
 
-    // เริ่มต้น Transaction เพื่อให้การดำเนินการเป็น Atomic (สร้างข้อมูลและบันทึก Log พร้อมกัน)
     const client = await pool.connect();
     try {
-      await client.query('BEGIN'); // เริ่ม Transaction
+      await client.query('BEGIN');
 
-      // 1. สร้างเขต/อำเภอใหม่ในฐานข้อมูล
       const insertQuery = `
-        INSERT INTO districts (name, description)
-        VALUES ($1, $2)
-        RETURNING id; -- ดึง ID ของข้อมูลที่เพิ่งสร้าง
+        INSERT INTO districts (name, province, region, status, description)
+        VALUES ($1, $2, $3, $4, $5)
+        RETURNING *;
       `;
-      const result = await client.query(insertQuery, [name, description]);
-      const newDistrictId = result.rows[0].id;
-
-      // 2. บันทึกกิจกรรม "CREATE" ลงใน Activity Log
-      await logActivity({
-        user_id: userId,
-        action: 'CREATE',
-        entity_type: 'District',
-        entity_id: newDistrictId,
-        details: {
-          district_name: name,
-          description: description,
-          created_by: userId,
-        },
-      });
-
-      await client.query('COMMIT'); // ยืนยัน Transaction
-      return NextResponse.json({ message: 'District created successfully', id: newDistrictId }, { status: 201 });
+      const result = await client.query<District>(insertQuery, [name, province, region, status, description]);
+      
+      await client.query('COMMIT');
+      
+      return NextResponse.json(result.rows[0], { status: 201 });
 
     } catch (transactionError: any) {
-      await client.query('ROLLBACK'); // ยกเลิก Transaction หากมีข้อผิดพลาด
+      await client.query('ROLLBACK');
       console.error('Transaction failed during district creation:', transactionError);
-      return NextResponse.json({ message: 'Failed to create district', error: transactionError.message }, { status: 500 });
-    } finally {
-      client.release(); // คืน Connection กลับสู่ Pool
-    }
-
-  } catch (error: any) {
-    console.error('Error in POST /api/admin/districts:', error);
-    return NextResponse.json({ message: 'Internal server error', error: error.message }, { status: 500 });
-  }
-}
-
-// PUT Request: อัปเดตข้อมูลเขต/อำเภอ
-export async function PUT(req: Request) {
-  // ตรวจสอบว่า pool ถูก initialize หรือไม่
-  if (!pool) {
-    console.error('Database pool is not initialized. Cannot process PUT request.');
-    return NextResponse.json({ message: 'Database connection not available.' }, { status: 500 });
-  }
-
-  try {
-    const { id, name, description } = await req.json();
-    const userId = await getUserIdFromRequest(req);
-
-    if (!userId) {
-      return NextResponse.json({ message: 'Unauthorized: User ID not found' }, { status: 401 });
-    }
-
-    if (!id) {
-      return NextResponse.json({ message: 'District ID is required for update' }, { status: 400 });
-    }
-
-    const client = await pool.connect();
-    try {
-      await client.query('BEGIN');
-
-      // (Optional) ดึงข้อมูลเก่าก่อนอัปเดตเพื่อบันทึกใน Log
-      const oldDistrictQuery = 'SELECT name, description FROM districts WHERE id = $1;';
-      const oldDistrictResult = await client.query(oldDistrictQuery, [id]);
-      const oldDistrict = oldDistrictResult.rows[0];
-
-      // 1. อัปเดตข้อมูลเขต/อำเภอ
-      const updateQuery = `
-        UPDATE districts
-        SET name = $1, description = $2
-        WHERE id = $3;
-      `;
-      const result = await client.query(updateQuery, [name, description, id]);
-
-      if (result.rowCount === 0) {
-        await client.query('ROLLBACK');
-        return NextResponse.json({ message: 'District not found' }, { status: 404 });
-      }
-
-      // 2. บันทึกกิจกรรม "UPDATE" ลงใน Activity Log
-      await logActivity({
-        user_id: userId,
-        action: 'UPDATE',
-        entity_type: 'District',
-        entity_id: id,
-        details: {
-          old_name: oldDistrict?.name || 'N/A',
-          old_description: oldDistrict?.description || 'N/A',
-          new_name: name,
-          new_description: description,
-          updated_by: userId,
-        },
-      });
-
-      await client.query('COMMIT');
-      return NextResponse.json({ message: 'District updated successfully' }, { status: 200 });
-
-    } catch (transactionError: any) {
-      await client.query('ROLLBACK');
-      console.error('Transaction failed during district update:', transactionError);
-      return NextResponse.json({ message: 'Failed to update district', error: transactionError.message }, { status: 500 });
+      return NextResponse.json({ error: 'Failed to create district', details: transactionError.message }, { status: 500 });
     } finally {
       client.release();
     }
-
   } catch (error: any) {
-    console.error('Error in PUT /api/admin/districts:', error);
-    return NextResponse.json({ message: 'Internal server error', error: error.message }, { status: 500 });
-  }
-}
-
-// DELETE Request: ลบข้อมูลเขต/อำเภอ
-export async function DELETE(req: Request) {
-  // ตรวจสอบว่า pool ถูก initialize หรือไม่
-  if (!pool) {
-    console.error('Database pool is not initialized. Cannot process DELETE request.');
-    return NextResponse.json({ message: 'Database connection not available.' }, { status: 500 });
-  }
-
-  try {
-    const { searchParams } = new URL(req.url);
-    const id = searchParams.get('id'); // ดึง ID จาก Query Parameter
-    const userId = await getUserIdFromRequest(req);
-
-    if (!userId) {
-      return NextResponse.json({ message: 'Unauthorized: User ID not found' }, { status: 401 });
-    }
-
-    if (!id) {
-      return NextResponse.json({ message: 'District ID is required for deletion' }, { status: 400 });
-    }
-
-    const client = await pool.connect();
-    try {
-      await client.query('BEGIN');
-
-      // (Optional) ดึงข้อมูลก่อนลบเพื่อบันทึกใน Log
-      const getDistrictQuery = 'SELECT name FROM districts WHERE id = $1;';
-      const districtResult = await client.query(getDistrictQuery, [id]);
-      const districtName = districtResult.rows[0]?.name;
-
-      // 1. ลบข้อมูลเขต/อำเภอ
-      const deleteQuery = 'DELETE FROM districts WHERE id = $1;';
-      const result = await client.query(deleteQuery, [id]);
-
-      if (result.rowCount === 0) {
-        await client.query('ROLLBACK');
-        return NextResponse.json({ message: 'District not found' }, { status: 404 });
-      }
-
-      // 2. บันทึกกิจกรรม "DELETE" ลงใน Activity Log
-      await logActivity({
-        user_id: userId,
-        action: 'DELETE',
-        entity_type: 'District',
-        entity_id: id,
-        details: {
-          district_name: districtName || 'Unknown District', // ใช้ชื่อที่ดึงมา หรือ 'Unknown'
-          deleted_by: userId,
-        },
-      });
-
-      await client.query('COMMIT');
-      return NextResponse.json({ message: 'District deleted successfully' }, { status: 200 });
-
-    } catch (transactionError: any) {
-      await client.query('ROLLBACK');
-      console.error('Transaction failed during district deletion:', transactionError);
-      return NextResponse.json({ message: 'Failed to delete district', error: transactionError.message }, { status: 500 });
-    } finally {
-      client.release();
-    }
-
-  } catch (error: any) {
-    console.error('Error in DELETE /api/admin/districts:', error);
-    return NextResponse.json({ message: 'Internal server error', error: error.message }, { status: 500 });
+    console.error('Error creating district:', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

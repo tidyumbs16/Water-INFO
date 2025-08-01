@@ -107,11 +107,12 @@ const MetricCard: React.FC<MetricCardProps> = ({ title, value, unit, trend, icon
 // === MAIN DASHBOARD COMPONENT (REFACTORED) ===
 const ModernWaterDashboard: React.FC = () => {
   const [currentTime, setCurrentTime] = useState(new Date());
-  const [selectedDistrict, setSelectedDistrict] = useState<string>(''); // เริ่มต้นเป็นค่าว่าง
+  const [selectedDistrict, setSelectedDistrict] = useState<string>('');
   const [isLoading, setIsLoading] = useState(true);
   const [districts, setDistricts] = useState<District[]>([]);
   const [waterData, setWaterData] = useState<WaterData | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [dataNotFound, setDataNotFound] = useState(false); // New state to handle 404 specifically
 
   // **สำคัญ:** ตรวจสอบว่า URL ของ Backend API ถูกต้อง
   const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api';
@@ -155,9 +156,6 @@ const ModernWaterDashboard: React.FC = () => {
     fetchDistricts();
   }, []); // <-- Dependency array ว่าง หมายถึงให้ทำงานครั้งเดียว
 
-
-
-
   // 2. ดึงข้อมูลน้ำของเขตที่เลือก
   useEffect(() => {
     const fetchWaterData = async (districtId: string) => {
@@ -166,9 +164,20 @@ const ModernWaterDashboard: React.FC = () => {
 
       setIsLoading(true);
       setError(null); // เคลียร์ error เก่าทุกครั้งที่พยายามโหลดใหม่
+      setDataNotFound(false); // Reset the data not found status
+
       try {
         console.log(`Fetching water data for district: ${districtId}`);
         const response = await fetch(`${API_BASE_URL}/water-data/${districtId}`);
+        
+        // **แก้ไข:** ตรวจสอบสถานะ 404 โดยเฉพาะ
+        if (response.status === 404) {
+          console.warn(`404 Not Found for district ID: ${districtId}. No data available.`);
+          setWaterData(null);
+          setDataNotFound(true);
+          return; // หยุดการทำงาน
+        }
+        
         if (!response.ok) {
           throw new Error(`ไม่สามารถโหลดข้อมูลน้ำของเขตนี้ได้ (Status: ${response.status})`);
         }
@@ -183,10 +192,6 @@ const ModernWaterDashboard: React.FC = () => {
         setIsLoading(false);
       }
     };
-
-
-
-
 
     fetchWaterData(selectedDistrict);
     
@@ -275,7 +280,6 @@ const ModernWaterDashboard: React.FC = () => {
 
 //ห้ามยุ่งกับส่วนนี้ //
 
-
   const criticalCount = metrics.filter(m => m.status === 'critical').length;
   const warningCount = metrics.filter(m => m.status === 'warning').length;
 
@@ -333,12 +337,22 @@ const ModernWaterDashboard: React.FC = () => {
         </div>
 
         {/* --- Data Display Area --- */}
-        {isLoading && !waterData && (
+        {isLoading && !waterData && !dataNotFound && (
           <div className="text-center text-slate-400">กำลังโหลดข้อมูลสำหรับ {selectedDistrictName}...</div>
         )}
 
-        {error && !waterData && (
-           <div className="max-w-2xl mx-auto bg-red-900/50 border border-red-500/50 rounded-2xl p-6 text-center">
+        {/* **เพิ่ม:** ส่วนแสดงผลเมื่อไม่พบข้อมูล (Status 404) */}
+        {!isLoading && dataNotFound && (
+          <div className="max-w-2xl mx-auto bg-amber-900/50 border border-amber-500/50 rounded-2xl p-6 text-center">
+            <AlertTriangle className="w-10 h-10 text-amber-400 mx-auto mb-3" />
+            <h3 className="text-xl font-bold text-white mb-2">ไม่พบข้อมูลสำหรับเขตนี้</h3>
+            <p className="text-amber-300">ข้อมูลยังไม่มีในระบบ โปรดเลือกเขตอื่นหรือลองใหม่อีกครั้งในภายหลัง</p>
+          </div>
+        )}
+
+        {/* **แก้ไข:** ส่วนแสดงผลเมื่อเกิดข้อผิดพลาดอื่นๆ (ไม่ใช่ 404) */}
+        {!isLoading && error && !dataNotFound && (
+            <div className="max-w-2xl mx-auto bg-red-900/50 border border-red-500/50 rounded-2xl p-6 text-center">
             <AlertTriangle className="w-10 h-10 text-red-400 mx-auto mb-3" />
             <h3 className="text-xl font-bold text-white mb-2">ไม่สามารถแสดงข้อมูลได้</h3>
             <p className="text-red-300">{error}</p>
@@ -368,7 +382,7 @@ const ModernWaterDashboard: React.FC = () => {
                   </span>
                 </div>
                 {/* Legend (Unchanged) */}
-                 <div className="flex items-center space-x-6 text-sm text-slate-400">
+                  <div className="flex items-center space-x-6 text-sm text-slate-400">
                     <div className="flex items-center space-x-2"><div className="w-2 h-2 bg-emerald-400 rounded-full"></div><span>ปกติ</span></div>
                     <div className="flex items-center space-x-2"><div className="w-2 h-2 bg-amber-400 rounded-full"></div><span>ระวัง</span></div>
                     <div className="flex items-center space-x-2"><div className="w-2 h-2 bg-red-400 rounded-full"></div><span>วิกฤต</span></div>

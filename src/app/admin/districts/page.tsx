@@ -5,7 +5,7 @@ import { PlusCircle, Edit, Trash2, Loader2, AlertCircle, MapPin, XCircle, CheckC
 
 // Define the District type for better type safety
 interface District {
-  id: string;
+  id: string; // Ensure id is always a string
   name: string; // Changed from 'district_name' to 'name' to match backend
   province: string;
   region: string; // Added region to match backend
@@ -190,9 +190,11 @@ const DistrictManagementPage: React.FC = () => {
         region: editDistrictRegion, // Added region to update data
         status: editDistrictStatus, // Added status to update data
         description: editDistrictDescription,
+        updated_at: new Date().toISOString(), // เพิ่ม timestamp สำหรับการอัปเดต
       };
 
       // เพิ่ม metrics fields เข้าไปใน updateData
+      // ตรวจสอบค่าที่เป็น undefined ก่อนส่ง เพื่อให้ backend ไม่ได้รับค่าที่ไม่จำเป็น
       if (editWaterQuality !== undefined) updateData.water_quality = editWaterQuality;
       if (editWaterVolume !== undefined) updateData.water_volume = editWaterVolume;
       if (editPressure !== undefined) updateData.pressure = editPressure;
@@ -201,6 +203,9 @@ const DistrictManagementPage: React.FC = () => {
       if (editVolumeTrend !== undefined) updateData.volume_trend = editVolumeTrend;
       if (editPressureTrend !== undefined) updateData.pressure_trend = editPressureTrend;
       if (editEfficiencyTrend !== undefined) updateData.efficiency_trend = editEfficiencyTrend;
+
+      console.log("Sending PUT request to:", `/api/admin/districts/${editDistrictId}`);
+      console.log("Payload:", updateData);
 
       const response = await fetch(`/api/admin/districts/${editDistrictId}`, {
         method: 'PUT',
@@ -217,11 +222,12 @@ const DistrictManagementPage: React.FC = () => {
         fetchDistricts(); // Refresh the list for real-time update
       } else {
         const errorData = await response.json();
+        console.error("Error response from API:", errorData);
         setError(errorData.message || 'เกิดข้อผิดพลาดในการอัปเดตเขตและข้อมูล Metrics');
       }
-    } catch (err) {
+    } catch (err: any) { // Catch any type of error
       console.error('Network or server error:', err);
-      setError('ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้ กรุณาตรวจสอบการเชื่อมต่อ');
+      setError(`ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้ กรุณาตรวจสอบการเชื่อมต่อ: ${err.message || ''}`);
     } finally {
       setIsLoading(false);
     }
@@ -239,6 +245,18 @@ const DistrictManagementPage: React.FC = () => {
         return;
       }
 
+      // --- CRITICAL CHECK AND LOGGING ---
+      // ตรวจสอบว่า deleteDistrictId มีค่าหรือไม่ก่อนส่งคำขอ
+      if (!deleteDistrictId) {
+        console.error('ERROR: deleteDistrictId is empty when attempting to delete.');
+        setError('ไม่สามารถลบเขตได้: ไม่พบรหัสเขตที่จะลบ');
+        setIsLoading(false);
+        setShowDeleteConfirm(false); // ปิด modal ถ้า ID หายไป
+        return;
+      }
+      console.log('Attempting to delete district with ID:', deleteDistrictId);
+      // --- END CRITICAL CHECK AND LOGGING ---
+
       const response = await fetch(`/api/admin/districts/${deleteDistrictId}`, {
         method: 'DELETE',
         headers: {
@@ -252,10 +270,11 @@ const DistrictManagementPage: React.FC = () => {
         fetchDistricts(); // Refresh the list
       } else {
         const errorData = await response.json();
+        console.error("Error response from DELETE API:", errorData); // Added for more detailed error
         setError(errorData.message || 'เกิดข้อผิดพลาดในการลบเขต');
       }
     } catch (err) {
-      console.error('Network or server error:', err);
+      console.error('Network or server error during DELETE:', err); // More specific error message
       setError('ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้ กรุณาตรวจสอบการเชื่อมต่อ');
     } finally {
       setIsLoading(false);
@@ -297,6 +316,10 @@ const DistrictManagementPage: React.FC = () => {
 
   // Open Delete Confirmation Modal
   const openDeleteConfirm = (district: District) => {
+    // --- DEBUGGING LOG ADDED HERE ---
+    console.log('Opening delete confirm for district:', district);
+    console.log('District ID to be set for deletion:', district.id);
+    // --- END DEBUGGING LOG ---
     setDeleteDistrictId(district.id);
     setDeleteDistrictName(district.name); // Use district.name
     setError(null);
@@ -309,189 +332,211 @@ const DistrictManagementPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-800 to-gray-900 text-white p-4 sm:p-6 lg:p-8">
-      <div className="max-w-7xl mx-auto bg-gray-800/60 backdrop-blur-xl border border-gray-700/50 rounded-3xl shadow-lg p-6 md:p-8">
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-3xl md:text-4xl font-bold text-cyan-400 flex items-center">
-            <MapPin className="w-8 h-8 mr-3" />
-            การจัดการเขต
-          </h1>
-          <button
-            onClick={openAddModal}
-            className="flex items-center px-4 py-2 bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-semibold rounded-xl shadow-md hover:from-emerald-600 hover:to-teal-700 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
-            disabled={isLoading}
-          >
-            <PlusCircle className="w-5 h-5 mr-2" />
-            เพิ่มเขตใหม่
-          </button>
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 text-white p-6">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-4xl font-extrabold text-cyan-400">
+          <MapPin className="inline-block w-9 h-9 mr-3 text-blue-400" />
+          จัดการข้อมูลเขต
+        </h1>
+        <button
+          onClick={openAddModal}
+          className="flex items-center px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-lg shadow-lg hover:from-green-600 hover:to-emerald-700 transition-all duration-300 transform hover:scale-105"
+        >
+          <PlusCircle className="w-5 h-5 mr-2" />
+          เพิ่มเขตใหม่
+        </button>
+      </div>
+
+      {/* Success/Error Messages */}
+      {successMessage && (
+        <div className="mb-4 p-4 bg-green-700/50 rounded-lg flex items-center text-green-200 shadow-md">
+          <CheckCircle className="w-6 h-6 mr-3" />
+          <p>{successMessage}</p>
         </div>
+      )}
+      {error && (
+        <div className="mb-4 p-4 bg-red-900/30 rounded-lg flex items-center text-red-300 shadow-md">
+          <XCircle className="w-6 h-6 mr-3" />
+          <p>{error}</p>
+        </div>
+      )}
 
-        {successMessage && (
-          <div className="flex items-center bg-green-900/30 border border-green-500/50 rounded-lg p-3 mb-4 text-sm animate-fade-in">
-            <CheckCircle className="w-5 h-5 mr-2 text-green-400" />
-            <span>{successMessage}</span>
-          </div>
-        )}
-
-        {error && (
-          <div className="flex items-center bg-red-900/30 border border-red-500/50 rounded-lg p-3 mb-4 text-sm animate-fade-in">
-            <AlertCircle className="w-5 h-5 mr-2 text-red-400" />
-            <span>{error}</span>
-          </div>
-        )}
-
-        {isLoading ? (
-          <div className="flex justify-center items-center h-48">
-            <Loader2 className="animate-spin w-10 h-10 text-cyan-400" />
-            <span className="ml-3 text-lg text-slate-400">กำลังโหลดข้อมูล...</span>
-          </div>
-        ) : (
-          <div className="overflow-x-auto rounded-xl border border-gray-700/50 shadow-md">
-            <table className="min-w-full divide-y divide-gray-700">
-              <thead className="bg-gray-700">
-                <tr>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                    รหัสเขต
-                  </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                    ชื่อเขต
-                  </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                    จังหวัด
-                  </th>
-                  <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-300 uppercase tracking-wider">
-                    การดำเนินการ
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-gray-800 divide-y divide-gray-700">
-                {districts.length === 0 ? (
+      {/* Loading State */}
+      {isLoading ? (
+        <div className="flex items-center justify-center h-64 text-gray-300">
+          <Loader2 className="w-10 h-10 animate-spin mr-3" />
+          <span className="text-xl">กำลังโหลดข้อมูลเขต...</span>
+        </div>
+      ) : (
+        /* Districts Table/List */
+        <div className="bg-gray-800/70 backdrop-blur-md rounded-xl shadow-2xl overflow-hidden border border-gray-700">
+          {districts.length === 0 ? (
+            <div className="p-8 text-center text-gray-400 text-lg">
+              ไม่พบข้อมูลเขตใดๆ ในระบบ
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-700">
+                <thead className="bg-gray-700">
                   <tr>
-                    <td colSpan={4} className="px-6 py-4 whitespace-nowrap text-center text-slate-400">
-                      ไม่พบข้อมูลเขต
-                    </td>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                      ชื่อเขต
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                      จังหวัด
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                      ภูมิภาค
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                      สถานะ
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                      อัปเดตล่าสุด
+                    </th>
+                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-300 uppercase tracking-wider">
+                      Actions
+                    </th>
                   </tr>
-                ) : (
-                  districts.map((district) => (
-                    <tr key={district.id} className="hover:bg-gray-700/70 transition-colors duration-200">
+                </thead>
+                <tbody className="bg-gray-800 divide-y divide-gray-700">
+                  {districts.map((district) => (
+                    <tr key={district.id} className="hover:bg-gray-700 transition-colors duration-150">
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-white">
-                        {district.id}
+                        {district.name}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-300">
-                        {district.name} {/* Use district.name */}
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
+                        {district.province}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-300">
-                        {district.province} {/* Display province */}
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
+                        {district.region}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm">
+                        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                          district.status === 'active' ? 'bg-green-100 text-green-800' :
+                          district.status === 'inactive' ? 'bg-red-100 text-red-800' :
+                          'bg-yellow-100 text-yellow-800'
+                        }`}>
+                          {district.status}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
+                        {district.updated_at ? new Date(district.updated_at).toLocaleString() : 'N/A'}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                         <button
                           onClick={() => openEditModal(district)}
-                          className="inline-flex items-center px-3 py-1 border border-transparent text-sm font-medium rounded-md text-blue-300 hover:text-blue-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200"
+                          className="text-blue-400 hover:text-blue-600 mr-3 transition-colors duration-200"
                           title="แก้ไข"
                         >
-                          <Edit className="h-5 w-5" />
+                          <Edit className="w-5 h-5" />
                         </button>
                         <button
                           onClick={() => openDeleteConfirm(district)}
-                          className="ml-2 inline-flex items-center px-3 py-1 border border-transparent text-sm font-medium rounded-md text-red-300 hover:text-red-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors duration-200"
+                          className="text-red-400 hover:text-red-600 transition-colors duration-200"
                           title="ลบ"
                         >
-                          <Trash2 className="h-5 w-5" />
+                          <Trash2 className="w-5 h-5" />
                         </button>
                       </td>
                     </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Add District Modal */}
       {showAddModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4 z-50">
-          <div className="bg-gray-800/90 backdrop-blur-lg border border-gray-700/50 rounded-2xl shadow-xl w-full max-w-md p-6">
-            <h3 className="text-2xl font-bold text-cyan-400 mb-5">เพิ่มเขตใหม่</h3>
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-gray-800 rounded-lg shadow-xl p-8 w-full max-w-lg border border-gray-700">
+            <h3 className="text-2xl font-bold text-cyan-400 mb-6 text-center">เพิ่มเขตใหม่</h3>
             <form onSubmit={handleAddDistrict} className="space-y-4">
               <div>
-                <label htmlFor="newDistrictName" className="block text-slate-300 text-sm font-medium mb-1">ชื่อเขต</label>
+                <label htmlFor="newDistrictName" className="block text-gray-300 text-sm font-medium mb-2">
+                  ชื่อเขต
+                </label>
                 <input
                   type="text"
                   id="newDistrictName"
-                  className="w-full px-4 py-2 bg-gray-700/50 border border-gray-600/50 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-400/50"
                   value={newDistrictName}
                   onChange={(e) => setNewDistrictName(e.target.value)}
+                  className="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   required
-                  disabled={isLoading}
                 />
               </div>
               <div>
-                <label htmlFor="newDistrictProvince" className="block text-slate-300 text-sm font-medium mb-1">จังหวัด</label>
+                <label htmlFor="newDistrictProvince" className="block text-gray-300 text-sm font-medium mb-2">
+                  จังหวัด
+                </label>
                 <input
                   type="text"
                   id="newDistrictProvince"
-                  className="w-full px-4 py-2 bg-gray-700/50 border border-gray-600/50 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-400/50"
                   value={newDistrictProvince}
                   onChange={(e) => setNewDistrictProvince(e.target.value)}
+                  className="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   required
-                  disabled={isLoading}
                 />
               </div>
               <div>
-                <label htmlFor="newDistrictRegion" className="block text-slate-300 text-sm font-medium mb-1">ภูมิภาค</label>
+                <label htmlFor="newDistrictRegion" className="block text-gray-300 text-sm font-medium mb-2">
+                  ภูมิภาค
+                </label>
                 <input
                   type="text"
                   id="newDistrictRegion"
-                  className="w-full px-4 py-2 bg-gray-700/50 border border-gray-600/50 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-400/50"
                   value={newDistrictRegion}
                   onChange={(e) => setNewDistrictRegion(e.target.value)}
+                  className="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   required
-                  disabled={isLoading}
                 />
               </div>
               <div>
-                <label htmlFor="newDistrictStatus" className="block text-slate-300 text-sm font-medium mb-1">สถานะ</label>
+                <label htmlFor="newDistrictStatus" className="block text-gray-300 text-sm font-medium mb-2">
+                  สถานะ
+                </label>
                 <select
                   id="newDistrictStatus"
-                  className="w-full px-4 py-2 bg-gray-700/50 border border-gray-600/50 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-cyan-400/50"
                   value={newDistrictStatus}
                   onChange={(e) => setNewDistrictStatus(e.target.value)}
+                  className="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none"
                   required
-                  disabled={isLoading}
                 >
                   <option value="active">Active</option>
                   <option value="inactive">Inactive</option>
+                  <option value="maintenance">Maintenance</option>
                 </select>
               </div>
               <div>
-                <label htmlFor="newDistrictDescription" className="block text-slate-300 text-sm font-medium mb-1">รายละเอียดเขต (ไม่บังคับ)</label>
+                <label htmlFor="newDistrictDescription" className="block text-gray-300 text-sm font-medium mb-2">
+                  รายละเอียด
+                </label>
                 <textarea
                   id="newDistrictDescription"
-                  rows={3}
-                  className="w-full px-4 py-2 bg-gray-700/50 border border-gray-600/50 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-400/50"
-                  placeholder="ใส่รายละเอียดเกี่ยวกับเขตนี้"
                   value={newDistrictDescription}
                   onChange={(e) => setNewDistrictDescription(e.target.value)}
-                  disabled={isLoading}
+                  rows={3}
+                  className="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 ></textarea>
               </div>
               <div className="flex justify-end space-x-3 mt-6">
                 <button
                   type="button"
                   onClick={() => setShowAddModal(false)}
-                  className="px-5 py-2 bg-gray-600 text-white rounded-xl hover:bg-gray-700 transition-colors duration-200 disabled:opacity-50"
-                  disabled={isLoading}
+                  className="px-5 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors duration-200"
                 >
                   ยกเลิก
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 bg-gradient-to-r from-emerald-500 to-teal-600 text-white rounded-xl hover:from-emerald-600 hover:to-teal-700 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
                   disabled={isLoading}
+                  className="px-5 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
                 >
-                  {isLoading ? <Loader2 className="animate-spin mr-2 w-5 h-5" /> : null}
-                  {isLoading ? 'กำลังเพิ่ม...' : 'เพิ่มเขต'}
+                  {isLoading ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : null}
+                  เพิ่มเขต
                 </button>
               </div>
             </form>
@@ -501,198 +546,209 @@ const DistrictManagementPage: React.FC = () => {
 
       {/* Edit District Modal */}
       {showEditModal && currentDistrict && (
-        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4 z-50 overflow-y-auto">
-          <div className="bg-gray-800/90 backdrop-blur-lg border border-gray-700/50 rounded-2xl shadow-xl w-full max-w-lg p-6 my-8">
-            <h3 className="text-2xl font-bold text-cyan-400 mb-5">แก้ไขเขต: {currentDistrict.name}</h3> {/* Use district.name */}
-            <form onSubmit={handleEditDistrict} className="space-y-6">
-              {/* Section for District General Information */}
-              <div className="space-y-4">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-gray-800 rounded-lg shadow-xl p-8 w-full max-w-2xl border border-gray-700 max-h-[90vh] overflow-y-auto">
+            <h3 className="text-2xl font-bold text-cyan-400 mb-6 text-center">แก้ไขเขต: {currentDistrict.name}</h3>
+            <form onSubmit={handleEditDistrict} className="space-y-4">
+              {/* Basic Info */}
+              <div>
+                <label htmlFor="editDistrictId" className="block text-gray-300 text-sm font-medium mb-2">
+                  รหัสเขต (ไม่สามารถแก้ไขได้)
+                </label>
+                <input
+                  type="text"
+                  id="editDistrictId"
+                  value={editDistrictId}
+                  readOnly
+                  className="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg text-gray-400 cursor-not-allowed"
+                />
+              </div>
+              <div>
+                <label htmlFor="editDistrictName" className="block text-gray-300 text-sm font-medium mb-2">
+                  ชื่อเขต
+                </label>
+                <input
+                  type="text"
+                  id="editDistrictName"
+                  value={editDistrictName}
+                  onChange={(e) => setEditDistrictName(e.target.value)}
+                  className="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  required
+                />
+              </div>
+              <div>
+                <label htmlFor="editDistrictProvince" className="block text-gray-300 text-sm font-medium mb-2">
+                  จังหวัด
+                </label>
+                <input
+                  type="text"
+                  id="editDistrictProvince"
+                  value={editDistrictProvince}
+                  onChange={(e) => setEditDistrictProvince(e.target.value)}
+                  className="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  required
+                />
+              </div>
+              <div>
+                <label htmlFor="editDistrictRegion" className="block text-gray-300 text-sm font-medium mb-2">
+                  ภูมิภาค
+                </label>
+                <input
+                  type="text"
+                  id="editDistrictRegion"
+                  value={editDistrictRegion}
+                  onChange={(e) => setEditDistrictRegion(e.target.value)}
+                  className="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  required
+                />
+              </div>
+              <div>
+                <label htmlFor="editDistrictStatus" className="block text-gray-300 text-sm font-medium mb-2">
+                  สถานะ
+                </label>
+                <select
+                  id="editDistrictStatus"
+                  value={editDistrictStatus}
+                  onChange={(e) => setEditDistrictStatus(e.target.value)}
+                  className="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none"
+                  required
+                >
+                  <option value="active">Active</option>
+                  <option value="inactive">Inactive</option>
+                  <option value="maintenance">Maintenance</option>
+                </select>
+              </div>
+              <div>
+                <label htmlFor="editDistrictDescription" className="block text-gray-300 text-sm font-medium mb-2">
+                  รายละเอียด
+                </label>
+                <textarea
+                  id="editDistrictDescription"
+                  value={editDistrictDescription}
+                  onChange={(e) => setEditDistrictDescription(e.target.value)}
+                  rows={3}
+                  className="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                ></textarea>
+              </div>
+
+              {/* Metrics Section */}
+              <div className="pt-6 border-t border-gray-700">
+                <h4 className="text-xl font-bold text-gray-200 mb-4">ข้อมูล Metrics</h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label htmlFor="editDistrictId" className="block text-slate-300 text-sm font-medium mb-1">รหัสเขต (ไม่สามารถแก้ไขได้)</label>
+                    <label htmlFor="editWaterQuality" className="block text-gray-300 text-sm font-medium mb-2">
+                      คุณภาพน้ำ
+                    </label>
                     <input
-                      type="text"
-                      id="editDistrictId"
-                      className="w-full px-4 py-2 bg-gray-700/50 border border-gray-600/50 rounded-lg text-gray-400 cursor-not-allowed"
-                      value={editDistrictId}
-                      disabled
+                      type="number" // Use type="number" for numerical inputs
+                      id="editWaterQuality"
+                      value={editWaterQuality === undefined ? '' : editWaterQuality}
+                      onChange={(e) => setEditWaterQuality(e.target.value === '' ? undefined : Number(e.target.value))}
+                      className="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
                   </div>
                   <div>
-                    <label htmlFor="editDistrictName" className="block text-slate-300 text-sm font-medium mb-1">ชื่อเขต</label>
+                    <label htmlFor="editWaterVolume" className="block text-gray-300 text-sm font-medium mb-2">
+                      ปริมาณน้ำ
+                    </label>
                     <input
-                      type="text"
-                      id="editDistrictName"
-                      className="w-full px-4 py-2 bg-gray-700/50 border border-gray-600/50 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-400/50"
-                      value={editDistrictName}
-                      onChange={(e) => setEditDistrictName(e.target.value)}
-                      required
-                      disabled={isLoading}
+                      type="number"
+                      id="editWaterVolume"
+                      value={editWaterVolume === undefined ? '' : editWaterVolume}
+                      onChange={(e) => setEditWaterVolume(e.target.value === '' ? undefined : Number(e.target.value))}
+                      className="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
                   </div>
-                </div>
-                <div>
-                  <label htmlFor="editDistrictProvince" className="block text-slate-300 text-sm font-medium mb-1">จังหวัด</label>
-                  <input
-                    type="text"
-                    id="editDistrictProvince"
-                    className="w-full px-4 py-2 bg-gray-700/50 border border-gray-600/50 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-400/50"
-                    value={editDistrictProvince}
-                    onChange={(e) => setEditDistrictProvince(e.target.value)}
-                    required
-                    disabled={isLoading}
-                  />
-                </div>
-                <div>
-                  <label htmlFor="editDistrictRegion" className="block text-slate-300 text-sm font-medium mb-1">ภูมิภาค</label>
-                  <input
-                    type="text"
-                    id="editDistrictRegion"
-                    className="w-full px-4 py-2 bg-gray-700/50 border border-gray-600/50 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-400/50"
-                    value={editDistrictRegion}
-                    onChange={(e) => setEditDistrictRegion(e.target.value)}
-                    required
-                    disabled={isLoading}
-                  />
-                </div>
-                <div>
-                  <label htmlFor="editDistrictStatus" className="block text-slate-300 text-sm font-medium mb-1">สถานะ</label>
-                  <select
-                    id="editDistrictStatus"
-                    className="w-full px-4 py-2 bg-gray-700/50 border border-gray-600/50 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-cyan-400/50"
-                    value={editDistrictStatus}
-                    onChange={(e) => setEditDistrictStatus(e.target.value)}
-                    required
-                    disabled={isLoading}
-                  >
-                    <option value="active">Active</option>
-                    <option value="inactive">Inactive</option>
-                  </select>
-                </div>
-                <div>
-                  <label htmlFor="editDistrictDescription" className="block text-slate-300 text-sm font-medium mb-1">รายละเอียดเขต</label>
-                  <textarea
-                    id="editDistrictDescription"
-                    rows={3}
-                    className="w-full px-4 py-2 bg-gray-700/50 border border-gray-600/50 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-400/50"
-                    placeholder="ใส่รายละเอียดเกี่ยวกับเขตนี้"
-                    value={editDistrictDescription}
-                    onChange={(e) => setEditDistrictDescription(e.target.value)}
-                    disabled={isLoading}
-                  ></textarea>
-                </div>
-              </div>
+                  <div>
+                    <label htmlFor="editPressure" className="block text-gray-300 text-sm font-medium mb-2">
+                      แรงดัน
+                    </label>
+                    <input
+                      type="number"
+                      id="editPressure"
+                      value={editPressure === undefined ? '' : editPressure}
+                      onChange={(e) => setEditPressure(e.target.value === '' ? undefined : Number(e.target.value))}
+                      className="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="editEfficiency" className="block text-gray-300 text-sm font-medium mb-2">
+                      ประสิทธิภาพ
+                    </label>
+                    <input
+                      type="number"
+                      id="editEfficiency"
+                      value={editEfficiency === undefined ? '' : editEfficiency}
+                      onChange={(e) => setEditEfficiency(e.target.value === '' ? undefined : Number(e.target.value))}
+                      className="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="editQualityTrend" className="block text-gray-300 text-sm font-medium mb-2">
+                      แนวโน้มคุณภาพ
+                    </label>
+                    <input
+                      type="text"
+                      id="editQualityTrend"
+                      value={editQualityTrend || ''}
+                      onChange={(e) => setEditQualityTrend(e.target.value)}
+                      className="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="editVolumeTrend" className="block text-gray-300 text-sm font-medium mb-2">
+                      แนวโน้มปริมาณน้ำ
+                    </label>
+                    <input
+                      type="text"
+                      id="editVolumeTrend"
+                      value={editVolumeTrend || ''}
+                      onChange={(e) => setEditVolumeTrend(e.target.value)}
+                      className="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="editPressureTrend" className="block text-gray-300 text-sm font-medium mb-2">
+                      แนวโน้มแรงดัน
+                    </label>
+                    <input
+                      type="text"
+                      id="editPressureTrend"
+                      value={editPressureTrend || ''}
+                      onChange={(e) => setEditPressureTrend(e.target.value)}
+                      className="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="editEfficiencyTrend" className="block text-gray-300 text-sm font-medium mb-2">
+                      แนวโน้มประสิทธิภาพ
+                    </label>
+                    <input
+                      type="text"
+                      id="editEfficiencyTrend"
+                      value={editEfficiencyTrend || ''}
+                      onChange={(e) => setEditEfficiencyTrend(e.target.value)}
+                      className="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                </div> {/* End of grid grid-cols-1 md:grid-cols-2 gap-4 */}
+              </div> {/* End of Metrics Section */}
 
-              {/* Section for Metrics Data */}
-              <h4 className="text-xl font-bold text-cyan-300 mt-6 mb-3 border-b border-gray-700 pb-2">ข้อมูล Metrics</h4>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label htmlFor="editWaterQuality" className="block text-slate-300 text-sm font-medium mb-1">คุณภาพน้ำ</label>
-                  <input
-                    type="number"
-                    id="editWaterQuality"
-                    className="w-full px-4 py-2 bg-gray-700/50 border border-gray-600/50 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-cyan-400/50"
-                    value={editWaterQuality ?? ''}
-                    onChange={(e) => setEditWaterQuality(parseFloat(e.target.value) || undefined)}
-                    disabled={isLoading}
-                  />
-                </div>
-                <div>
-                  <label htmlFor="editWaterVolume" className="block text-slate-300 text-sm font-medium mb-1">ปริมาณน้ำ</label>
-                  <input
-                    type="number"
-                    id="editWaterVolume"
-                    className="w-full px-4 py-2 bg-gray-700/50 border border-gray-600/50 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-cyan-400/50"
-                    value={editWaterVolume ?? ''}
-                    onChange={(e) => setEditWaterVolume(parseFloat(e.target.value) || undefined)}
-                    disabled={isLoading}
-                  />
-                </div>
-                <div>
-                  <label htmlFor="editPressure" className="block text-slate-300 text-sm font-medium mb-1">แรงดัน</label>
-                  <input
-                    type="number"
-                    id="editPressure"
-                    className="w-full px-4 py-2 bg-gray-700/50 border border-gray-600/50 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-cyan-400/50"
-                    value={editPressure ?? ''}
-                    onChange={(e) => setEditPressure(parseFloat(e.target.value) || undefined)}
-                    disabled={isLoading}
-                  />
-                </div>
-                <div>
-                  <label htmlFor="editEfficiency" className="block text-slate-300 text-sm font-medium mb-1">ประสิทธิภาพ</label>
-                  <input
-                    type="number"
-                    id="editEfficiency"
-                    className="w-full px-4 py-2 bg-gray-700/50 border border-gray-600/50 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-cyan-400/50"
-                    value={editEfficiency ?? ''}
-                    onChange={(e) => setEditEfficiency(parseFloat(e.target.value) || undefined)}
-                    disabled={isLoading}
-                  />
-                </div>
-                <div>
-                  <label htmlFor="editQualityTrend" className="block text-slate-300 text-sm font-medium mb-1">แนวโน้มคุณภาพ</label>
-                  <input
-                    type="text"
-                    id="editQualityTrend"
-                    className="w-full px-4 py-2 bg-gray-700/50 border border-gray-600/50 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-cyan-400/50"
-                    value={editQualityTrend ?? ''}
-                    onChange={(e) => setEditQualityTrend(e.target.value)}
-                    disabled={isLoading}
-                  />
-                </div>
-                <div>
-                  <label htmlFor="editVolumeTrend" className="block text-slate-300 text-sm font-medium mb-1">แนวโน้มปริมาณน้ำ</label>
-                  <input
-                    type="text"
-                    id="editVolumeTrend"
-                    className="w-full px-4 py-2 bg-gray-700/50 border border-gray-600/50 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-cyan-400/50"
-                    value={editVolumeTrend ?? ''}
-                    onChange={(e) => setEditVolumeTrend(e.target.value)}
-                    disabled={isLoading}
-                  />
-                </div>
-                <div>
-                  <label htmlFor="editPressureTrend" className="block text-slate-300 text-sm font-medium mb-1">แนวโน้มแรงดัน</label>
-                  <input
-                    type="text"
-                    id="editPressureTrend"
-                    className="w-full px-4 py-2 bg-gray-700/50 border border-gray-600/50 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-cyan-400/50"
-                    value={editPressureTrend ?? ''}
-                    onChange={(e) => setEditPressureTrend(e.target.value)}
-                    disabled={isLoading}
-                  />
-                </div>
-                <div>
-                  <label htmlFor="editEfficiencyTrend" className="block text-slate-300 text-sm font-medium mb-1">แนวโน้มประสิทธิภาพ</label>
-                  <input
-                    type="text"
-                    id="editEfficiencyTrend"
-                    className="w-full px-4 py-2 bg-gray-700/50 border border-gray-600/50 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-cyan-400/50"
-                    value={editEfficiencyTrend ?? ''}
-                    onChange={(e) => setEditEfficiencyTrend(e.target.value)}
-                    disabled={isLoading}
-                  />
-                </div>
-              </div>
-
-              {/* Buttons */}
-              <div className="flex justify-end space-x-3 mt-8">
+              <div className="flex justify-end space-x-3 mt-6">
                 <button
                   type="button"
                   onClick={() => setShowEditModal(false)}
-                  className="px-5 py-2 bg-gray-600 text-white rounded-xl hover:bg-gray-700 transition-colors duration-200 disabled:opacity-50"
-                  disabled={isLoading}
+                  className="px-5 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors duration-200"
                 >
                   ยกเลิก
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-xl hover:from-blue-600 hover:to-indigo-700 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
                   disabled={isLoading}
+                  className="px-5 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
                 >
-                  {isLoading ? <Loader2 className="animate-spin mr-2 w-5 h-5" /> : null}
-                  {isLoading ? 'กำลังอัปเดต...' : 'บันทึกการแก้ไข'}
+                  {isLoading ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : null}
+                  บันทึกการแก้ไข
                 </button>
               </div>
             </form>
@@ -702,35 +758,46 @@ const DistrictManagementPage: React.FC = () => {
 
       {/* Delete Confirmation Modal */}
       {showDeleteConfirm && (
-        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4 z-50">
-          <div className="bg-gray-800/90 backdrop-blur-lg border border-gray-700/50 rounded-2xl shadow-xl w-full max-w-md p-6">
-            <h3 className="text-2xl font-bold text-red-400 mb-5">ยืนยันการลบเขต</h3>
-            <p className="text-slate-300 mb-6">
-              คุณแน่ใจหรือไม่ว่าต้องการลบเขต <span className="font-semibold text-white">"{deleteDistrictName}" (รหัส: {deleteDistrictId})</span>?
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-gray-800 rounded-lg shadow-xl p-8 w-full max-w-md border border-gray-700 text-center">
+            <AlertCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
+            <h3 className="text-2xl font-bold text-red-400 mb-4">ยืนยันการลบเขต?</h3>
+            <p className="text-gray-300 mb-6">
+              คุณแน่ใจหรือไม่ว่าต้องการลบเขต "<span className="font-semibold text-white">{deleteDistrictName}</span>" นี้?
               การดำเนินการนี้ไม่สามารถย้อนกลับได้
             </p>
-            <div className="flex justify-end space-x-3 mt-6">
+            <div className="flex justify-center space-x-4">
               <button
                 type="button"
                 onClick={() => setShowDeleteConfirm(false)}
-                className="px-5 py-2 bg-gray-600 text-white rounded-xl hover:bg-gray-700 transition-colors duration-200 disabled:opacity-50"
-                disabled={isLoading}
+                className="px-6 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors duration-200"
               >
                 ยกเลิก
               </button>
               <button
                 type="button"
                 onClick={handleDeleteDistrict}
-                className="px-5 py-2 bg-gradient-to-r from-red-500 to-rose-600 text-white rounded-xl hover:from-red-600 hover:to-rose-700 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
                 disabled={isLoading}
+                className="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
               >
-                {isLoading ? <Loader2 className="animate-spin mr-2 w-5 h-5" /> : null}
-                {isLoading ? 'กำลังลบ...' : 'ยืนยันการลบ'}
+                {isLoading ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : null}
+                ยืนยันการลบ
               </button>
             </div>
           </div>
         </div>
       )}
+
+      {/* Go Back Button */}
+      <div className="mt-8 flex justify-center">
+        <button
+          onClick={handleGoBack}
+          className="flex items-center px-6 py-3 bg-gray-700 text-white rounded-lg shadow-lg hover:bg-gray-600 transition-all duration-300 transform hover:scale-105"
+        >
+          <ChevronLeft className="w-5 h-5 mr-2" />
+          ย้อนกลับ
+        </button>
+      </div>
     </div>
   );
 };
