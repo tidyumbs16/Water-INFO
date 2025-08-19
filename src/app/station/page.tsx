@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { ChevronRight, MapPin, Globe, Building } from 'lucide-react';
+import NavbarComponent from '@/components/navbar';
 
 // Interfaces สำหรับโครงสร้างข้อมูลที่คาดว่าจะได้รับจาก API
 interface DistrictDisplay {
@@ -122,7 +123,7 @@ export default function StationsPage() {
         provinceId: d['จังหวัด'],
         provinceName: d['จังหวัด'],
         regionId: d['ภูมิภาค'],
-        regionName: d['ภูมิภาค'],
+        regionName: d['ชื่อภูมิภาค'],
         address: d['ที่อยู่'] || 'ยังไม่มีข้อมูลที่อยู่',
         contact: d['contact'] || 'ยังไม่มีข้อมูลติดต่อ',
         capacity: d['capacity'] || 'ยังไม่มีข้อมูลความจุ',
@@ -164,7 +165,10 @@ export default function StationsPage() {
   const overallLoading = loadingRegions || loadingProvinces || loadingDistricts;
 
   return (
+   
+  
     <div className="min-h-screen bg-gradient-to-br from-blue-100 to-indigo-200 p-4 sm:p-6 lg:p-8 font-inter">
+       <NavbarComponent />
       <div className="max-w-7.5xl mx-auto bg-white rounded-3xl shadow-xl p-6 sm:p-8 lg:p-10">
         <h1 className="text-3xl sm:text-4xl font-extrabold text-center text-blue-800 mb-8 flex items-center justify-center gap-3">
           <MapPin className="w-8 h-8 sm:w-10 sm:h-10 text-blue-600" />
@@ -259,32 +263,39 @@ export default function StationsPage() {
             {districtsToDisplay.length > 0 ? (
               <ul className="space-y-4">
                 {/* การแก้ไข: กำหนด key ที่ไม่ซ้ำกันสำหรับแต่ละ li */}
-                {districtsToDisplay.map((district) => (
-                  <li
-                    key={district.id}
-                    className="bg-blue-50 p-5 rounded-xl shadow-md hover:shadow-lg transition-shadow duration-200 ease-in-out border border-blue-200"
-                  >
-                    <Link
-                      href={`/districts/${district.id}`}
-                      className="block text-blue-800 hover:text-blue-600"
-                    >
-                      <div className="flex items-center justify-between">
-                        <h3 className="text-xl font-semibold mb-1">
-                          {district.name}
-                        </h3>
-                        <ChevronRight className="w-6 h-6 text-blue-500" />
-                      </div>
-                      <p className="text-gray-600 text-sm">
-                        <span className="font-medium">ที่อยู่:</span>{" "}
-                        {district.address}
-                      </p>
-                      <p className="text-gray-600 text-sm">
-                        <span className="font-medium">จังหวัด:</span>{" "}
-                        {district.provinceName}
-                      </p>
-                    </Link>
-                  </li>
-                ))}
+        
+            {districtsToDisplay.map((district) => (
+  <li
+    key={`${district.id}-${district.name}-${district.provinceId}`} // ใช้ค่าที่ไม่ซ้ำ
+    className="bg-blue-50 p-5 rounded-xl shadow-md hover:shadow-lg transition-shadow duration-200 ease-in-out border border-blue-200"
+  >
+    <Link
+      href={`/districts/${district.id}`}
+      className="block text-blue-800 hover:text-blue-600"
+    >
+      <div className="flex items-center justify-between">
+        <h3 className="text-xl font-semibold mb-1">
+          {district.name}
+        </h3>
+        <ChevronRight className="w-6 h-6 text-blue-500" />
+      </div>
+      <p className="text-gray-600 text-sm">
+        <span className="font-medium">ที่อยู่:</span>{" "}
+        {district.address}
+      </p>
+     
+    
+      <p className="text-gray-600 text-sm">
+        <span className="font-medium">สถานะ:</span>{" "}
+        {district.status}
+      </p>
+      <p className="text-gray-600 text-sm">
+        <span className="font-medium">โทรศัพท์:</span>{" "}
+        {district.contact || 'ยังไม่มีข้อมูลติดต่อ'}
+      </p>
+    </Link>
+  </li>
+))}
               </ul>
             ) : !loadingDistricts ? (
               <div className="text-center py-8 text-gray-600 text-lg">

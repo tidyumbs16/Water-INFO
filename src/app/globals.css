@@ -27,3 +27,12 @@
 .animate-pulse-strong {
   animation: pulse-strong 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
+@keyframes float {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  33% { transform: translateY(-10px) rotate(120deg); }
+  66% { transform: translateY(5px) rotate(240deg); }
+}
+
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}

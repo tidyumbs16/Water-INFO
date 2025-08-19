@@ -16,7 +16,7 @@ export default function Main() {
 
   return (
     <ImageBackground
-      source={require('../assets/bg.blue.png')}
+      source={require('../assets/bg_blue3.png')}
       style={styles.backgroundContainer}
       resizeMode="cover"
     >

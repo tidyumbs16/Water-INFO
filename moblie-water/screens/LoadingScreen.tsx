@@ -8,7 +8,7 @@
     return (
       
       <ImageBackground
-        source={require('../assets/bg.blue.png')} // Ensure this path is correct
+        source={require('../assets/bg_blue3.png')} // Ensure this path is correct
         style={styles.backgroundContainer}
         resizeMode="cover"
       >

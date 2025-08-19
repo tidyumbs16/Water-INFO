@@ -5,7 +5,7 @@ import { Icon } from "@iconify/react";
 
 const Footer: React.FC = () => {
   return (
-    <footer className="relative bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 text-white overflow-hidden">
+    <footer className="relative mt-16 bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 text-white overflow-hidden pt-12 pb-8 animate-[fadeInUp_0.8s_ease-in-out]">
       {/* Animated background elements */}
       <div className="absolute inset-0 opacity-10">
         <div className="absolute top-10 left-20 w-32 h-32 bg-blue-400 rounded-full blur-3xl animate-pulse"></div>
@@ -14,7 +14,7 @@ const Footer: React.FC = () => {
       </div>
 
       {/* Main content */}
-      <div className="relative z-10 p-7 mt-12">
+      <div className="relative z-10 p-7">
         <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-8 text-center md:text-left">
           {/* About Section */}
           <div className="space-y-4">
@@ -108,7 +108,7 @@ const Footer: React.FC = () => {
 
         <Divider className="my-8 bg-gradient-to-r from-transparent via-cyan-500/30 to-transparent" />
 
-        {/* Copyright with enhanced styling */}
+        {/* Copyright */}
         <div className="text-center">
           <div className="inline-flex items-center space-x-2 text-xs text-gray-400 bg-white/5 px-4 py-2 rounded-full backdrop-blur-sm">
             <Icon icon="material-symbols:copyright" className="text-cyan-400" />

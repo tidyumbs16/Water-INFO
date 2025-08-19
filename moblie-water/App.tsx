@@ -1,5 +1,5 @@
 // App.tsx (หรือไฟล์ที่คุณกำหนด RootStackParamList)
-
+import 'react-native-gesture-handler'; 
 import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
@@ -10,7 +10,7 @@ import StationDetailScreen from './screens/StationDetailScreen';
 import LoadingScreen from './screens/LoadingScreen';
 
 import Main from './screens/Main';
-import Selected from './screens/Selected'
+import SelectedScreen from './screens/Selected'
 
 // Define the params type for StationDetail route
 export type StationDetailParams = {
@@ -35,7 +35,7 @@ const App: React.FC = () => {
          <Stack.Screen name="Main" component={Main} options={{ headerShown: false }} />
         <Stack.Screen name="LoadingScreen"component={LoadingScreen}options={{ headerShown: false }} />
         <Stack.Screen name="Home" component={HomeScreen}  options={{headerShown: false}}/>
-       <Stack.Screen  name="Selected" component={Selected} options={{ title: 'เลือกเขตประปา' }} />
+       <Stack.Screen  name="Selected" component={SelectedScreen} options={{ title: 'เลือกเขตประปา' }} />
         <Stack.Screen name="StationDetail" component={StationDetailScreen} initialParams={{ districtId: '', districtName: '' }}options={{ title: 'รายละเอียดเขตประปา' }}
         />
       </Stack.Navigator>

@@ -1,9 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
-import pool from '@/lib/db'; // แก้ไข: นำเข้า pool โดยตรง
-import { AlertSetting } from '../../../interfaces/index'; // ตรวจสอบ Path ของ interfaces ให้ถูกต้อง
-import jwt from 'jsonwebtoken'; // Import jsonwebtoken
+import pool from '@/lib/db';
+import { AlertSetting } from '../../../interfaces/index';
+import jwt from 'jsonwebtoken';
 
-// Helper function for token validation
+/**
+ * ฟังก์ชันช่วยเหลือสำหรับการตรวจสอบ JWT Token
+ * @param req NextRequest object
+ * @returns Object ที่มีสถานะการตรวจสอบ Token
+ */
 const validateToken = (req: NextRequest) => {
   const authHeader = req.headers.get('Authorization');
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -26,6 +30,11 @@ const validateToken = (req: NextRequest) => {
   }
 };
 
+/**
+ * API Route สำหรับดึงข้อมูล Alert Settings
+ * @param req NextRequest object
+ * @returns NextResponse object ที่มีข้อมูลการตั้งค่าหรือข้อผิดพลาด
+ */
 export async function GET(req: NextRequest) {
   const auth = validateToken(req);
   if (!auth.isValid) {
@@ -33,8 +42,12 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    // แก้ไข: เรียกใช้ pool!.query โดยตรง
-    const result = await pool!.query<AlertSetting>(`SELECT * FROM alert_settings ORDER BY metric_name ASC`);
+    // เพิ่มการตรวจสอบ pool เพื่อป้องกันข้อผิดพลาด 500 หากการเชื่อมต่อฐานข้อมูลล้มเหลว
+    if (!pool) {
+      console.error('Database connection pool is not available.');
+      return NextResponse.json({ message: 'ไม่สามารถเชื่อมต่อฐานข้อมูลได้' }, { status: 500 });
+    }
+    const result = await pool.query<AlertSetting>(`SELECT * FROM alert_settings ORDER BY metric_name ASC`);
     return NextResponse.json(result.rows);
   } catch (error: any) {
     console.error('Error fetching alert settings:', error);
@@ -42,6 +55,11 @@ export async function GET(req: NextRequest) {
   }
 }
 
+/**
+ * API Route สำหรับเพิ่ม Alert Setting ใหม่
+ * @param req NextRequest object
+ * @returns NextResponse object ที่มีข้อมูลการตั้งค่าที่เพิ่มใหม่หรือข้อผิดพลาด
+ */
 export async function POST(req: NextRequest) {
   const auth = validateToken(req);
   if (!auth.isValid) {
@@ -55,15 +73,38 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    // แก้ไข: เรียกใช้ pool!.query โดยตรง
-    const result = await pool!.query(
-      `
-      INSERT INTO alert_settings (metric_name, min_good, max_good, min_warning, max_warning, min_critical, max_critical, is_enabled, created_at, updated_at)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW(), NOW())
-      RETURNING *;
-      `,
-      [metric_name, min_good, max_good, min_warning, max_warning, min_critical, max_critical, is_enabled]
-    );
+    // เพิ่มการตรวจสอบ pool เพื่อป้องกันข้อผิดพลาด 500
+    if (!pool) {
+      console.error('Database connection pool is not available.');
+      return NextResponse.json({ message: 'ไม่สามารถเชื่อมต่อฐานข้อมูลได้' }, { status: 500 });
+    }
+    const result = await pool.query(
+  `
+  INSERT INTO alert_settings (
+    metric_name,
+    min_good,
+    max_good,
+    min_warning,
+    max_warning,
+    min_critical,
+    max_critical,
+    is_enabled,
+    updated_at
+  )
+  VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW())
+  RETURNING *;
+  `,
+  [
+    metric_name,
+    min_good,
+    max_good,
+    min_warning,
+    max_warning,
+    min_critical,
+    max_critical,
+    is_enabled
+  ]
+);
     return NextResponse.json({ message: 'เพิ่มการตั้งค่าสำเร็จ', setting: result.rows[0] }, { status: 201 });
   } catch (error: any) {
     console.error('Error creating alert setting:', error);
@@ -71,6 +112,11 @@ export async function POST(req: NextRequest) {
   }
 }
 
+/**
+ * API Route สำหรับแก้ไข Alert Setting
+ * @param req NextRequest object
+ * @returns NextResponse object ที่มีข้อมูลการตั้งค่าที่อัปเดตหรือข้อผิดพลาด
+ */
 export async function PUT(req: NextRequest) {
   const auth = validateToken(req);
   if (!auth.isValid) {
@@ -84,8 +130,12 @@ export async function PUT(req: NextRequest) {
   }
 
   try {
-    // แก้ไข: เรียกใช้ pool!.query โดยตรง
-    const result = await pool!.query(
+    // เพิ่มการตรวจสอบ pool เพื่อป้องกันข้อผิดพลาด 500
+    if (!pool) {
+      console.error('Database connection pool is not available.');
+      return NextResponse.json({ message: 'ไม่สามารถเชื่อมต่อฐานข้อมูลได้' }, { status: 500 });
+    }
+    const result = await pool.query(
       `
       UPDATE alert_settings
       SET
@@ -114,6 +164,11 @@ export async function PUT(req: NextRequest) {
   }
 }
 
+/**
+ * API Route สำหรับลบ Alert Setting
+ * @param req NextRequest object
+ * @returns NextResponse object ที่มีข้อมูลการตั้งค่าที่ถูกลบหรือข้อผิดพลาด
+ */
 export async function DELETE(req: NextRequest) {
   const auth = validateToken(req);
   if (!auth.isValid) {
@@ -128,8 +183,12 @@ export async function DELETE(req: NextRequest) {
   }
 
   try {
-    // แก้ไข: เรียกใช้ pool!.query โดยตรง
-    const result = await pool!.query(`DELETE FROM alert_settings WHERE id = $1 RETURNING *;`, [id]);
+    // เพิ่มการตรวจสอบ pool เพื่อป้องกันข้อผิดพลาด 500
+    if (!pool) {
+      console.error('Database connection pool is not available.');
+      return NextResponse.json({ message: 'ไม่สามารถเชื่อมต่อฐานข้อมูลได้' }, { status: 500 });
+    }
+    const result = await pool.query(`DELETE FROM alert_settings WHERE id = $1 RETURNING *;`, [id]);
     if (result.rowCount === 0) {
       return NextResponse.json({ message: 'ไม่พบการตั้งค่าที่ต้องการลบ' }, { status: 404 });
     }

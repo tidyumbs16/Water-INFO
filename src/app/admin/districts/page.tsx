@@ -64,6 +64,15 @@ const DistrictManagementPage: React.FC = () => {
   const [editPressureTrend, setEditPressureTrend] = useState<string | undefined>(undefined);
   const [editEfficiencyTrend, setEditEfficiencyTrend] = useState<string | undefined>(undefined);
 
+const [newWaterQuality, setNewWaterQuality] = useState<number | undefined>(undefined);
+const [newWaterVolume, setNewWaterVolume] = useState<number | undefined>(undefined);
+const [newPressure, setNewPressure] = useState<number | undefined>(undefined);
+const [newEfficiency, setNewEfficiency] = useState<number | undefined>(undefined);
+const [newQualityTrend, setNewQualityTrend] = useState<string>('');
+const [newVolumeTrend, setNewVolumeTrend] = useState<string>('');
+const [newPressureTrend, setNewPressureTrend] = useState<string>('');
+const [newEfficiencyTrend, setNewEfficiencyTrend] = useState<string>('');
+
   // Function to fetch districts from the backend
   const fetchDistricts = async () => {
     setIsLoading(true);
@@ -134,21 +143,29 @@ const DistrictManagementPage: React.FC = () => {
         setIsLoading(false);
         return;
       }
-
+const bodyPayload = {
+      name: newDistrictName,
+      province: newDistrictProvince,
+      region: newDistrictRegion,
+      status: newDistrictStatus,
+      description: newDistrictDescription,
+      water_quality: newWaterQuality,
+      water_volume: newWaterVolume,
+      pressure: newPressure,
+      efficiency: newEfficiency,
+      quality_trend: newQualityTrend,
+      volume_trend: newVolumeTrend,
+      pressure_trend: newPressureTrend,
+      efficiency_trend: newEfficiencyTrend,
+    };
       const response = await fetch('/api/admin/districts', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`,
         },
-        body: JSON.stringify({
-          name: newDistrictName, // Changed from 'district_name' to 'name'
-          province: newDistrictProvince,
-          region: newDistrictRegion, // Added region
-          status: newDistrictStatus, // Added status
-          description: newDistrictDescription,
-        }),
-      });
+        body: JSON.stringify(bodyPayload),
+        });
 
       if (response.ok) {
         showSuccess('เพิ่มเขตสำเร็จ!');
@@ -326,10 +343,8 @@ const DistrictManagementPage: React.FC = () => {
     setShowDeleteConfirm(true);
   };
 
-  // ฟังก์ชันสำหรับปุ่ม "ย้อนกลับ"
-  const handleGoBack = () => {
-    window.history.back(); // ใช้ API ของ Browser เพื่อย้อนกลับไปยังหน้าก่อนหน้าในประวัติ
-  };
+    
+  
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 text-white p-6">
@@ -788,16 +803,7 @@ const DistrictManagementPage: React.FC = () => {
         </div>
       )}
 
-      {/* Go Back Button */}
-      <div className="mt-8 flex justify-center">
-        <button
-          onClick={handleGoBack}
-          className="flex items-center px-6 py-3 bg-gray-700 text-white rounded-lg shadow-lg hover:bg-gray-600 transition-all duration-300 transform hover:scale-105"
-        >
-          <ChevronLeft className="w-5 h-5 mr-2" />
-          ย้อนกลับ
-        </button>
-      </div>
+     
     </div>
   );
 };

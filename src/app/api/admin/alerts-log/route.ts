@@ -1,29 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server';
-import pool from '@/lib/db'; // แก้ไข: นำเข้า pool โดยตรง
-import { AlertLog } from '../../../interfaces/index'; // ตรวจสอบ Path ของ interfaces ของคุณ
-import jwt from 'jsonwebtoken'; // นำเข้า jsonwebtoken
+import pool from '@/lib/db';
+import { AlertLog } from '../../../interfaces/index';
+import jwt from 'jsonwebtoken';
 
 export async function GET(req: NextRequest) {
   const authHeader = req.headers.get('Authorization');
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    console.warn('Unauthorized access: No Token provided');
+  if (!authHeader?.startsWith('Bearer ')) {
     return NextResponse.json({ message: 'ไม่ได้รับอนุญาต: ไม่พบ Token' }, { status: 401 });
   }
+
   const token = authHeader.split(' ')[1];
+  const jwtSecret = process.env.JWT_SECRET;
+  if (!jwtSecret) {
+    return NextResponse.json({ message: 'เกิดข้อผิดพลาดในการตั้งค่าเซิร์ฟเวอร์' }, { status: 500 });
+  }
 
   try {
-    const jwtSecret = process.env.JWT_SECRET;
-    if (!jwtSecret) {
-      console.error('JWT_SECRET ไม่ได้ถูกกำหนดใน .env.local');
-      return NextResponse.json({ message: 'เกิดข้อผิดพลาดในการตั้งค่าเซิร์ฟเวอร์' }, { status: 500 });
-    }
-    // ตรวจสอบ JWT Token
     jwt.verify(token, jwtSecret);
-    // หาก verify สำเร็จ โค้ดจะดำเนินต่อไป
-
-  } catch (error: any) {
-    console.warn('Forbidden access: Invalid Token', error.message);
-    return NextResponse.json({ message: 'ไม่อนุญาต: Token ไม่ถูกต้อง หรือหมดอายุ', error: error.message }, { status: 403 });
+  } catch (error) {
+    return NextResponse.json({ message: 'ไม่อนุญาต: Token ไม่ถูกต้อง หรือหมดอายุ', error: (error as Error).message }, { status: 403 });
   }
 
   const { searchParams } = new URL(req.url);
@@ -38,7 +33,7 @@ export async function GET(req: NextRequest) {
         al.metric_name,
         al.alert_type,
         al.current_value::numeric AS current_value, 
-        al.threshold_info::text AS threshold_value, 
+        COALESCE(al.threshold_info::text, '') AS threshold_value, 
         al.message,
         al.is_resolved,
         al.resolved_at,
@@ -57,7 +52,7 @@ export async function GET(req: NextRequest) {
     queryParams.push(districtId);
   }
 
-  if (isResolved !== 'all' && isResolved !== null) {
+  if (isResolved && isResolved !== 'all') {
     sqlQuery += ` AND al.is_resolved = $${paramIndex++}`;
     queryParams.push(isResolved === 'true');
   }
@@ -65,11 +60,10 @@ export async function GET(req: NextRequest) {
   sqlQuery += ` ORDER BY al.created_at DESC`;
 
   try {
-    // แก้ไข: เรียกใช้ pool!.query โดยตรง
     const result = await pool!.query<AlertLog>(sqlQuery, queryParams);
     return NextResponse.json(result.rows);
-  } catch (error: any) {
+  } catch (error) {
     console.error('Error fetching alerts log:', error);
-    return NextResponse.json({ message: 'เกิดข้อผิดพลาดในการดึงข้อมูลประวัติการแจ้งเตือน', error: error.message }, { status: 500 });
+    return NextResponse.json({ message: 'เกิดข้อผิดพลาดในการดึงข้อมูลประวัติการแจ้งเตือน', error: (error as Error).message }, { status: 500 });
   }
 }

@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import Script from 'next/script'; // Import Script component
+import { Nav } from "react-day-picker";
+import NavbarComponent from "@/components/navbar";
 
 
 
@@ -36,7 +38,7 @@ export default function RootLayout({
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
   
         {children}  
-     
+   
       </body>
     </html>
   );

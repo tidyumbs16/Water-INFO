@@ -170,7 +170,7 @@ const SelectedScreen: React.FC = () => {
             onPress={() => handleDistrictSelect(item.id, item.district_name)}
           >
             <View style={styles.districtInfo}>
-              <MapPin size={20} color="#0ea5e9" style={styles.districtIcon} /> 
+            <MapPin size={20} stroke="#0ea5e9" style={styles.districtIcon} />
               <View>
                 <Text style={styles.districtName}>{item.district_name}</Text>
                 <Text style={styles.districtLocation}>{item.province} : {item.region}</Text>

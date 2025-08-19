@@ -114,6 +114,9 @@ export interface Sensor {
 
 
 export interface ProblemReport {
+  phone_number: ReactNode;
+  problem_type: ReactNode;
+  importance: string;
   id: string; // UUID จาก Database
   phone: string | null;
   issue_type: string;
