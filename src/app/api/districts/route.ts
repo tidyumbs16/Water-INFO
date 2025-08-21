@@ -20,7 +20,7 @@ export async function GET(request: Request) {
     const queryValues: string[] = [];
 
     if (provinceId) {
-      queryText += ' WHERE province_id = $1'; // ปรับให้ตรงกับ DB จริง
+      queryText += ' WHERE province = $1'; // ปรับให้ตรงกับ DB จริง
       queryValues.push(provinceId);
     }
 

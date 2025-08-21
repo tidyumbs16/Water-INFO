@@ -119,15 +119,15 @@ export default function StationsPage() {
       const rawDistrictsData: any[] = await districtsRes.json();
       const formattedDistricts: DistrictDisplay[] = rawDistrictsData.map(d => ({
         id: d['district_id'], // ใช้ ID ที่ไม่ซ้ำกัน
-        name: d['name'] || 'Unnamed District',
+        name: d['district_name'] || 'ยังไม่มีชื่อเขต',
         provinceId: d['จังหวัด'],
         provinceName: d['จังหวัด'],
         regionId: d['ภูมิภาค'],
         regionName: d['ชื่อภูมิภาค'],
-        address: d['ที่อยู่'] || 'ยังไม่มีข้อมูลที่อยู่',
+        address: d['city'] || 'ยังไม่มีข้อมูลที่อยู่',
         contact: d['contact'] || 'ยังไม่มีข้อมูลติดต่อ',
         capacity: d['capacity'] || 'ยังไม่มีข้อมูลความจุ',
-        status: d['status'] || 'ปกติ',
+        status: d['status'] || 'ยังไม่มีข้อมูลสถานะ'
       }));
       setDistrictsToDisplay(formattedDistricts);
     } catch (e: any) {

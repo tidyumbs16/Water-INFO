@@ -1,0 +1,71 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "province": "เชียงใหม่",
+        "region": "ภาคเหนือ"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[98.8, 19.0], [99.3, 19.0], [99.3, 18.5], [98.8, 18.5], [98.8, 19.0]]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "province": "ขอนแก่น",
+        "region": "ภาคตะวันออกเฉียงเหนือ"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[102.5, 16.6], [103.0, 16.6], [103.0, 16.1], [102.5, 16.1], [102.5, 16.6]]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "province": "กรุงเทพมหานคร",
+        "region": "ภาคกลาง"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[100.3, 13.9], [100.9, 13.9], [100.9, 13.5], [100.3, 13.5], [100.3, 13.9]]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "province": "ชลบุรี",
+        "region": "ภาคตะวันออก"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[100.9, 13.5], [101.5, 13.5], [101.5, 12.8], [100.9, 12.8], [100.9, 13.5]]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "province": "กาญจนบุรี",
+        "region": "ภาคตะวันตก"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[98.5, 14.5], [99.0, 14.5], [99.0, 14.0], [98.5, 14.0], [98.5, 14.5]]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "province": "สงขลา",
+        "region": "ภาคใต้"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[100.4, 7.3], [101.0, 7.3], [101.0, 6.7], [100.4, 6.7], [100.4, 7.3]]]
+      }
+    }
+  ]
+}
