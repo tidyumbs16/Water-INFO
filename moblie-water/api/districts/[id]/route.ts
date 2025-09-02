@@ -1,6 +1,6 @@
 // app/api/districts/[id]/route.ts
 import { NextResponse } from 'next/server';
-import pool from '../../../../lib/db';
+import pool from '@/lib/db';
 
 export const dynamic = 'force-dynamic';
 

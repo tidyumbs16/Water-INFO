@@ -17,7 +17,6 @@ import UserManagementPage from '../users/page';
 import SensorManagementPage from '../sensors/page';
 import AnalyticsPage from '../analytics/page';
 import AlertsLogPage from '../alerts-log/page'; // Not used in renderPageContent, but imported
-import AlertManagementPage from '../alerts/page';
 import LeafletMap from '../map/page'; // Import the LeafletMap component
 
 // Define the type for the props that will be passed from _app.tsx (or parent)
@@ -60,7 +59,6 @@ const AdminDashboardLayout: React.FC<AdminDashboardLayoutProps> = ({ auth, userI
         { id: 'analytics', label: 'วิเคราะห์ข้อมูล', icon: <BarChart3 className="w-5 h-5" /> },
         { id: 'users', label: 'จัดการADMIN', icon: <Users className="w-5 h-5" /> },
         { id: 'districts', label: 'จัดการเขต', icon: <MapPin className="w-5 h-5" /> },
-        { id: 'alerts', label: 'การแจ้งเตือน', icon: <Bell className="w-5 h-5" /> },
         { id: 'LeafletMap', label: 'แผนที่', icon: <AlertCircle className="w-5 h-5" /> },
     ];
 
@@ -104,8 +102,6 @@ const AdminDashboardLayout: React.FC<AdminDashboardLayoutProps> = ({ auth, userI
                 return <SensorManagementPage />;
             case 'analytics':
                 return <AnalyticsPage />;
-            case 'alerts':
-                return <AlertManagementPage />;
             case 'LeafletMap':
                 return <LeafletMap />;
             default:

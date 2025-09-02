@@ -266,11 +266,11 @@ export default function StationsPage() {
         
             {districtsToDisplay.map((district) => (
   <li
-    key={`${district.id}-${district.name}-${district.provinceId}`} // ใช้ค่าที่ไม่ซ้ำ
-    className="bg-blue-50 p-5 rounded-xl shadow-md hover:shadow-lg transition-shadow duration-200 ease-in-out border border-blue-200"
+    key={district.id} // ใช้ district.id ที่ควรจะไม่ซ้ำกันเป็น key
+    className="bg-blue-50 p-5 rounded-xl shadow-md hover:shadow-lg transition-shadow duration-200 ease-in-out border-l-4 border-blue-300"
   >
     <Link
-      href={`/districts/${district.id}`}
+      href={`/station/${district.id}`}
       className="block text-blue-800 hover:text-blue-600"
     >
       <div className="flex items-center justify-between">
@@ -279,20 +279,10 @@ export default function StationsPage() {
         </h3>
         <ChevronRight className="w-6 h-6 text-blue-500" />
       </div>
-      <p className="text-gray-600 text-sm">
-        <span className="font-medium">ที่อยู่:</span>{" "}
-        {district.address}
-      </p>
+      
      
     
-      <p className="text-gray-600 text-sm">
-        <span className="font-medium">สถานะ:</span>{" "}
-        {district.status}
-      </p>
-      <p className="text-gray-600 text-sm">
-        <span className="font-medium">โทรศัพท์:</span>{" "}
-        {district.contact || 'ยังไม่มีข้อมูลติดต่อ'}
-      </p>
+      
     </Link>
   </li>
 ))}

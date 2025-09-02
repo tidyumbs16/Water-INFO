@@ -1,3 +1,4 @@
+/*
 'use client';
 
 import React, { useState, useEffect, useCallback } from "react";
@@ -6,46 +7,7 @@ import { useRouter } from 'next/navigation';
 import { AlertSetting, AlertLog, District, ProblemReport } from '../../interfaces/index'; // Import ProblemReport interface
 import { id } from "zod/v4/locales/index.cjs";
 
-// Define interfaces if they are not in a separate file or for clarity
-// interface AlertSetting {
-//   id: number;
-//   metric_name: string;
-//   min_good: number | null;
-//   max_good: number | null;
-//   min_warning: number | null;
-//   max_warning: number | null;
-//   min_critical: number | null;
-//   max_critical: number | null;
-//   is_enabled: boolean;
-// }
-// interface AlertLog {
-//   id: number;
-//   district_id: string;
-//   district_name: string;
-//   metric_name: string;
-//   alert_type: 'warning' | 'critical';
-//   current_value: number;
-//   threshold_value: string;
-//   message: string;
-//   created_at: string;
-//   is_resolved: boolean;
-//   resolved_by_username: string | null;
-//   resolved_at: string | null;
-// }
-// interface District {
-//   id: string;
-//   name: string;
-// }
-// interface ProblemReport {
-//   id: string;
-//   phone_number: string;
-//   problem_type: string;
-//   subject: string;
-//   details: string;
-//   importance: 'low' | 'medium' | 'high';
-//   created_at: string;
-//   is_resolved: boolean;
-// }
+
 
 
 const AlertManagementPage: React.FC = () => {
@@ -448,7 +410,7 @@ const AlertManagementPage: React.FC = () => {
 
 return (
   <div className="flex-1 p-10 bg-gradient-to-br from-blue-50 via-white to-blue-50 text-gray-900">
-    {/* Header */}
+    {/* Header 
     <header className="mb-8 flex justify-between items-center">
       <h1 className="text-4xl font-extrabold text-blue-700 flex items-center">
         <Bell className="mr-3 w-10 h-10 text-blue-500" /> การแจ้งเตือน
@@ -462,7 +424,7 @@ return (
       </button>
     </header>
 
-    {/* Success Message */}
+
     {successMessage && (
       <div className="bg-green-100 border border-green-300 text-green-700 rounded-xl p-4 mb-6 flex items-center space-x-3 animate-fade-in">
         <CheckCircle className="w-6 h-6" />
@@ -470,7 +432,7 @@ return (
       </div>
     )}
 
-    {/* Alert Settings Section */}
+  
     <section className="mb-12">
       <h2 className="text-3xl font-bold text-blue-700 mb-6 flex items-center">
         <Settings className="mr-2 w-8 h-8 text-blue-500" /> การตั้งค่าเกณฑ์การแจ้งเตือน
@@ -543,13 +505,13 @@ return (
       )}
     </section>
 
-    {/* Problem Reports Section */}
+  
     <section>
       <h2 className="text-3xl font-bold text-blue-700 mb-6 flex items-center">
         <MessageSquare className="mr-2 w-8 h-8 text-blue-500" /> รายงานปัญหาจากผู้ใช้
       </h2>
 
-      {/* Filter */}
+    
       <div className="bg-blue-50 border border-blue-200 rounded-2xl p-6 mb-6 flex flex-wrap gap-4 items-center">
         <div className="flex items-center space-x-2">
           <Filter className="w-5 h-5 text-blue-400" />
@@ -570,7 +532,6 @@ return (
         </div>
       </div>
 
-      {/* Reports Table */}
       {problemReports.length === 0 ? (
         <div className="text-center p-10 bg-blue-50 border border-blue-200 rounded-2xl">
           <p className="text-blue-500 text-lg">ไม่พบรายงานปัญหาจากผู้ใช้ตามตัวกรองที่เลือก</p>
@@ -644,7 +605,7 @@ return (
       )}
     </section>
 
-    {/* Setting Modal */}
+  
     {isSettingModalOpen && (
       <div className="fixed inset-0 bg-blue-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
         <div className="bg-white border border-blue-200 rounded-2xl w-full max-w-2xl p-8 shadow-2xl">
@@ -667,7 +628,7 @@ return (
             </div>
           )}
           <form onSubmit={handleSettingSubmit}>
-            {/* Form Fields */}
+      
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="col-span-1 md:col-span-2">
                 <label className="block text-blue-700 mb-2">Metric Name</label>
@@ -753,7 +714,7 @@ return (
               </div>
             </div>
 
-            {/* Submit */}
+        
             <div className="mt-8 flex justify-end space-x-4">
               <button
                 type="button"
@@ -773,8 +734,10 @@ return (
         </div>
       </div>
     )}
-  </div>
+  </div> 
+
 )
 }
 
 export default AlertManagementPage;
+*/

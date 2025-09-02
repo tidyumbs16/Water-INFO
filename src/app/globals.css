@@ -36,3 +36,39 @@
 .animate-float {
   animation: float 6s ease-in-out infinite;
 }
+
+/* slideDown / slideUp animation */
+@keyframes slideDown {
+  0% {
+    opacity: 0;
+    max-height: 0;
+    transform: translateY(-5px);
+  }
+  100% {
+    opacity: 1;
+    max-height: 1000px;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideUp {
+  0% {
+    opacity: 1;
+    max-height: 1000px;
+    transform: translateY(0);
+  }
+  100% {
+    opacity: 0;
+    max-height: 0;
+    transform: translateY(-5px);
+  }
+}
+
+.animate-slideDown {
+  animation: slideDown 0.3s ease-out forwards;
+}
+
+.animate-slideUp {
+  animation: slideUp 0.3s ease-in forwards;
+}
+

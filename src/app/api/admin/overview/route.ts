@@ -1,4 +1,3 @@
-// src/app/api/admin/overview/route.ts
 import { NextResponse } from "next/server";
 import pool from "@/lib/db";
 
@@ -15,15 +14,17 @@ export async function GET(req: Request) {
     // WHERE clause
     let whereClause = "WHERE 1=1";
     if (districtId) whereClause += ` AND district_id = '${districtId}'`;
-   if (date) {
-  whereClause += ` AND date = '${date}'`;
-} else if (range === "today") {
-  whereClause += ` AND date = CURRENT_DATE`;
-} else if (range === "7d") {
-  whereClause += ` AND date >= CURRENT_DATE - INTERVAL '7 days'`;
-} else if (range === "30d") {
-  whereClause += ` AND date >= CURRENT_DATE - INTERVAL '30 days'`;
-}
+    
+    if (date) {
+      // ✅ ตัด timezone ออก
+      whereClause += ` AND date::date = '${date}'`;
+    } else if (range === "today") {
+      whereClause += ` AND date = CURRENT_DATE`;
+    } else if (range === "7d") {
+      whereClause += ` AND date >= CURRENT_DATE - INTERVAL '7 days'`;
+    } else if (range === "30d") {
+      whereClause += ` AND date >= CURRENT_DATE - INTERVAL '30 days'`;
+    }
 
     // ค่าเฉลี่ย
     const avgQuery = `
@@ -44,24 +45,24 @@ export async function GET(req: Request) {
       efficiency_avg: Number(avgResult.rows[0]?.efficiency_avg) || 0,
     };
 
-    // แนวโน้ม
+    // แนวโน้ม (ใช้ date::date เพื่อให้เป็นวันตรง local)
     const trendQuery = `
       SELECT
-        date,
+        date::date AS date_only,
         ROUND(water_quality::numeric, 2) AS water_quality_avg,
         ROUND(water_volume::numeric, 2) AS water_volume_avg,
         ROUND(pressure::numeric, 2) AS pressure_avg,
         ROUND(efficiency::numeric, 2) AS efficiency_avg
       FROM district_metrics_daily
       ${whereClause}
-      ORDER BY date ASC;
+      ORDER BY date_only ASC;
     `;
     const trendResult = await client.query(trendQuery);
-    let trends = trendResult.rows;
 
-    // auto-fill (เฉพาะ 7d, 30d)
-    if (range === "7d") trends = fillMissingDates(trends, 7);
-    if (range === "30d") trends = fillMissingDates(trends, 30);
+    const trends = trendResult.rows.map(r => ({
+      ...r,
+      date: r.date_only, // ✅ ใช้ date_only ที่ตัดเวลาออกแล้ว
+    }));
 
     // ข้อมูล Pie Chart
     const pieData = [
@@ -79,28 +80,4 @@ export async function GET(req: Request) {
   } finally {
     if (client) client.release();
   }
-}
-
-// เติมวันย้อนหลัง
-function fillMissingDates(trends: any[], days: number) {
-  const today = new Date();
-  const result = [];
-
-  for (let i = days - 1; i >= 0; i--) {
-    const d = new Date(today);
-    d.setDate(today.getDate() - i);
-    const dateStr = d.toISOString().split("T")[0];
-
-    const found = trends.find(t => t.date === dateStr);
-    result.push(
-      found || {
-        date: dateStr,
-        water_quality_avg: 0,
-        water_volume_avg: 0,
-        pressure_avg: 0,
-        efficiency_avg: 0,
-      }
-    );
-  }
-  return result;
 }

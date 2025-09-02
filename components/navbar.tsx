@@ -17,9 +17,8 @@ const NavbarComponent: React.FC = () => {
   }, []);
 
   const navItems = [
-    { name: 'Home', href: '/', hasDropdown: false },
-    { name: 'Another', href: '#', hasDropdown: true },
-    { name: 'Contact', href: '#', hasDropdown: false },
+    { name: 'Home', href: '/homeweb/Home', hasDropdown: false },
+    { name: 'Another', href: '#', hasDropdown: true }
   ];
 
   const serviceItems = [
