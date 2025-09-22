@@ -1,6 +1,6 @@
 // scripts/dailyMetricsCron.ts
 import cron from "node-cron";
-import pool from "@/lib/db";
+import pool from "../lib/db";
 
 // ฟังก์ชันสุ่มข้อมูลและบันทึกลง DB
 async function insertDailyMetrics() {

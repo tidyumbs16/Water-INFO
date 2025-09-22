@@ -1,8 +1,6 @@
-// 📄 HomeScreen.tsx (Full React Native UI based on screenshot)
-import { RootStackParamList } from '@/App';
-import { useNavigation } from '@react-navigation/native';
-import { StackNavigationProp } from '@react-navigation/stack';
-import React, { useEffect, useState } from 'react';
+// 📄 HomeScreen.tsx (ESM/CJS-safe)
+import type { RootStackParamList } from "../App";
+import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -12,14 +10,13 @@ import {
   ActivityIndicator,
   TouchableOpacity,
   Platform,
-} from 'react-native';
+} from "react-native";
 
-const screenWidth = Dimensions.get('window').width;
+const screenWidth = Dimensions.get("window").width;
 const API_BASE_URL = Platform.select({
-  ios: 'http://localhost:3001',
-  android: 'http://192.168.7.118:3001',
-  default: 'http://192.168.7.118:3001',
-
+  ios: "http://localhost:3001",
+  android: "http://192.168.7.118:3001",
+  default: "http://192.168.7.118:3001",
 });
 
 interface DashboardOverview {
@@ -29,8 +26,20 @@ interface DashboardOverview {
   average_efficiency: number;
 }
 
+// ✅ ทำ nav hook ที่ใช้ require runtime เพื่อหลบ ESM/CJS
+type RouteNames = keyof RootStackParamList;
+interface NavLike {
+  navigate: (screen: RouteNames, params?: any) => void;
+  goBack: () => void;
+}
+function useNav(): NavLike {
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  const { useNavigation } = require("@react-navigation/native");
+  return useNavigation();
+}
+
 const HomeScreen: React.FC = () => {
-  const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
+  const navigation = useNav();
   const [data, setData] = useState<DashboardOverview | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -38,13 +47,11 @@ const HomeScreen: React.FC = () => {
     const fetchOverview = async () => {
       try {
         const res = await fetch(`${API_BASE_URL}/api/overview`);
-        if (!res.ok) {
-          throw new Error(`HTTP error! status: ${res.status}`);
-        }
-        const json = await res.json();
+        if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+        const json = (await res.json()) as DashboardOverview;
         setData(json);
       } catch (err) {
-        console.error('Error:', err);
+        console.error("Error:", err);
       } finally {
         setLoading(false);
       }
@@ -63,7 +70,7 @@ const HomeScreen: React.FC = () => {
   if (!data) {
     return (
       <View style={styles.center}>
-        <Text style={{ color: '#ef4444' }}>ไม่สามารถโหลดข้อมูลได้</Text>
+        <Text style={{ color: "#ef4444" }}>ไม่สามารถโหลดข้อมูลได้</Text>
       </View>
     );
   }
@@ -71,8 +78,8 @@ const HomeScreen: React.FC = () => {
   return (
     <ScrollView style={styles.container}>
       <View style={styles.headerSection}>
-        <Text style={styles.greeting}>Welcome  to AquaFlow</Text>
-        <Text style={styles.subGreeting}>รบบติดตามคุณภาพน้ํา  </Text>
+        <Text style={styles.greeting}>Welcome to AquaFlow</Text>
+        <Text style={styles.subGreeting}>ระบบติดตามคุณภาพน้ำ</Text>
       </View>
 
       {/* Overview Section */}
@@ -96,9 +103,9 @@ const HomeScreen: React.FC = () => {
         icon="📊"
         title="Analytics"
         description="View your data insights"
-        onPress={() => navigation.navigate('Analytics')}
+        onPress={() => navigation.navigate("Analytics")}
       />
-   
+
       <MainMenuItem icon="📈" title="Reports" description="" />
     </ScrollView>
   );
@@ -154,93 +161,93 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 16,
-    backgroundColor: '#ebf8ff', // สีฟ้าอ่อน
+    backgroundColor: "#ebf8ff",
   },
   center: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#ebf8ff',
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#ebf8ff",
   },
   headerSection: {
     marginBottom: 24,
   },
   greeting: {
     fontSize: 24,
-    fontWeight: 'bold',
-    color: '#0ea5e9',
+    fontWeight: "bold",
+    color: "#0ea5e9",
   },
   subGreeting: {
     fontSize: 16,
-    color: '#64748b',
+    color: "#64748b",
   },
   sectionTitle: {
     fontSize: 18,
-    fontWeight: 'bold',
-    color: '#1e3a8a',
+    fontWeight: "bold",
+    color: "#1e3a8a",
     marginBottom: 12,
     marginTop: 24,
   },
   overviewRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    justifyContent: "space-between",
   },
   overviewCard: {
-    backgroundColor: '#ffffff',
+    backgroundColor: "#ffffff",
     borderRadius: 12,
     padding: 16,
-    width: '30%',
-    alignItems: 'center',
-    shadowColor: '#000',
+    width: "30%",
+    alignItems: "center",
+    shadowColor: "#000",
     shadowOpacity: 0.05,
     shadowRadius: 4,
     elevation: 2,
   },
   cardValue: {
     fontSize: 20,
-    color: '#0ea5e9',
-    fontWeight: 'bold',
+    color: "#0ea5e9",
+    fontWeight: "bold",
   },
   cardTitle: {
     fontSize: 14,
-    color: '#1e293b',
+    color: "#1e293b",
   },
   cardDelta: {
     fontSize: 12,
-    color: '#22c55e',
+    color: "#22c55e",
     marginTop: 4,
   },
   quickActions: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    justifyContent: "space-between",
     marginBottom: 12,
   },
   actionButton: {
-    backgroundColor: '#0ea5e9',
+    backgroundColor: "#0ea5e9",
     borderRadius: 12,
     padding: 16,
-    alignItems: 'center',
+    alignItems: "center",
     flex: 1,
     marginHorizontal: 4,
   },
   actionIcon: {
     fontSize: 20,
-    color: '#fff',
+    color: "#fff",
     marginBottom: 4,
   },
   actionText: {
-    color: '#fff',
-    fontWeight: 'bold',
+    color: "#fff",
+    fontWeight: "bold",
   },
   menuItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#ffffff',
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#ffffff",
     padding: 16,
     borderRadius: 10,
     marginBottom: 8,
-    justifyContent: 'space-between',
-    shadowColor: '#000',
+    justifyContent: "space-between",
+    shadowColor: "#000",
     shadowOpacity: 0.05,
     shadowRadius: 2,
     elevation: 1,
@@ -251,15 +258,15 @@ const styles = StyleSheet.create({
   },
   menuTitle: {
     fontSize: 16,
-    fontWeight: 'bold',
-    color: '#1e3a8a',
+    fontWeight: "bold",
+    color: "#1e3a8a",
   },
   menuDescription: {
     fontSize: 14,
-    color: '#475569',
+    color: "#475569",
   },
   menuArrow: {
     fontSize: 18,
-    color: '#1e3a8a',
+    color: "#1e3a8a",
   },
 });

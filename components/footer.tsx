@@ -1,7 +1,12 @@
 "use client";
 import React from "react";
 import { Link, Divider } from "@heroui/react";
-import { Icon } from "@iconify/react";
+import dynamic from "next/dynamic";
+
+// ใช้ dynamic import สำหรับ Iconify
+const Icon = dynamic(() => import("@iconify/react").then(m => m.Icon), {
+  ssr: false,
+});
 
 const Footer: React.FC = () => {
   return (
@@ -91,7 +96,7 @@ const Footer: React.FC = () => {
                   </p>
                 </div>
               </div>
-              
+
               <div className="space-y-2">
                 <div className="flex items-center justify-center md:justify-start space-x-2 p-2 rounded-lg hover:bg-white/5 transition-colors">
                   <Icon icon="material-symbols:mail" className="text-cyan-400" />

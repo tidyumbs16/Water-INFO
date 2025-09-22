@@ -102,15 +102,19 @@ export async function getProvinces(region?: string): Promise<Province[]> {
 /**
  * ดึงข้อมูล District ตาม id
  */
-export async function getDistrictById(districtId: string): Promise<District | null> {
+export async function getDistrictById(id: string): Promise<District | null> {
   if (!pool) throw new Error("Database connection is not configured.");
   try {
     const query = `
       SELECT 
         id,
         name,
-        province AS "province",
-        region AS "region",
+        province AS "provinceName",
+        region AS "regionName",
+        address,
+        contact,
+        capacity,
+        population,
         status,
         description
       FROM districts
@@ -118,12 +122,12 @@ export async function getDistrictById(districtId: string): Promise<District | nu
       LIMIT 1;
     `;
 
-    const result = await pool.query<District>(query, [districtId]);
+    const result = await pool.query<District>(query, [id]);
 
     if (result.rows.length === 0) return null;
     return result.rows[0];
   } catch (err) {
-    console.error(`Error fetching district by ID (${districtId}):`, err);
+    console.error(`Error fetching district by ID (${id}):`, err);
     throw err;
   }
 }

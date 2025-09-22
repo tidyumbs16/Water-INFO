@@ -1,16 +1,34 @@
-import type { NextApiRequest, NextApiResponse } from 'next';
-import pool from '../../../../lib/db';
+import { NextResponse } from "next/server";
+import pool from "../../../../lib/db";
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  if (req.method === 'GET') {
-    if (!pool) {
-      return res.status(500).json({ message: 'Database connection not established.' });
-    }
-    const { rows } = await pool.query(
-      `SELECT date, SUM(water_volume) as total_volume, AVG(water_quality) as avg_quality
-       FROM district_metrics GROUP BY date ORDER BY date DESC LIMIT 7`
+export const dynamic = "force-dynamic"; // กัน cache ถ้าจำเป็น
+
+export async function GET() {
+  if (!pool) {
+    return NextResponse.json(
+      { message: "Database connection not established." },
+      { status: 500 }
     );
-    return res.status(200).json(rows);
   }
-  res.status(405).json({ message: 'Method not allowed' });
+
+  try {
+    const { rows } = await pool.query(
+      `SELECT 
+         date, 
+         SUM(water_volume) AS total_volume, 
+         AVG(water_quality) AS avg_quality
+       FROM district_metrics
+       GROUP BY date
+       ORDER BY date DESC
+       LIMIT 7`
+    );
+
+    return NextResponse.json(rows);
+  } catch (error) {
+    console.error("Error fetching water metrics:", error);
+    return NextResponse.json(
+      { message: "Failed to fetch water metrics" },
+      { status: 500 }
+    );
+  }
 }

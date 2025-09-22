@@ -1,46 +1,25 @@
-import { pool } from "../../../../lib/db"; // ตรวจสอบ path ให้ตรง
+import { NextResponse } from "next/server";
+import { getDistrictById } from "../../../../lib/db";
 
-export interface District {
-  id: string;
-  name: string;
-  province: string;
-  region: string;
-  status: string | null;
-  description: string | null;
-  population: number | null;
-  lat: number | null;
-  lng: number | null;
-}
-
-export async function getStationById(districtId: string): Promise<District | null> {
-  if (!pool) {
-    console.error("Database connection pool is not initialized.");
-    return null;
-  }
+export async function GET(request: Request, context: any) {
+  const { stationId } = context.params;
 
   try {
-    const query = `
-      SELECT 
-        id,
-        name,
-        province,
-        region,
-        status,
-        description,
-      FROM districts
-      WHERE id = $1
-      LIMIT 1;
-    `;
+    const district = await getDistrictById(stationId);
 
-    const result = await pool.query(query, [districtId]);
-
-    if (result.rows.length === 0) {
-      return null;
+    if (!district) {
+      return NextResponse.json(
+        { error: `District with ID ${stationId} not found` },
+        { status: 404 }
+      );
     }
 
-    return result.rows[0];
+    return NextResponse.json(district);
   } catch (err) {
-    console.error("Error fetching district by ID:", err);
-    throw err;
+    console.error(`Error fetching district ${stationId}:`, err);
+    return NextResponse.json(
+      { error: "Failed to fetch district data" },
+      { status: 500 }
+    );
   }
 }

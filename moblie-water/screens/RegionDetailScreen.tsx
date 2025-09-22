@@ -6,23 +6,30 @@ import {
   ActivityIndicator,
   FlatList,
   TouchableOpacity,
-  SafeAreaView
+  SafeAreaView,
 } from "react-native";
-import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
-import { StackNavigationProp } from "@react-navigation/stack";
 import { ChevronRight, ChevronLeft } from "lucide-react-native";
 import { Picker } from "@react-native-picker/picker";
 
-const API_BASE_URL = "http://192.168.7.118:3001"; // 🔁 ปรับเป็น API จริงเมื่อ deploy
+const API_BASE_URL = "http://192.168.7.118:3001";
 
-// --- Types ---
+// --- Types (เฉพาะที่ใช้จริง) ---
 type RootStackParamList = {
   RegionDetail: { regionName: string };
   StationDetail: { districtId: string; districtName: string };
 };
 
-type RegionDetailRouteProp = RouteProp<RootStackParamList, "RegionDetail">;
-type NavigationProp = StackNavigationProp<RootStackParamList, "RegionDetail">;
+// ✅ hooks นำทาง/อ่าน route แบบ require runtime (เลี่ยง ESM/CJS)
+function useNav() {
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  const { useNavigation } = require("@react-navigation/native");
+  return useNavigation();
+}
+function useRout() {
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  const { useRoute } = require("@react-navigation/native");
+  return useRoute();
+}
 
 interface Province {
   id: string;
@@ -38,8 +45,8 @@ interface District {
 }
 
 const RegionDetailScreen: React.FC = () => {
-  const navigation = useNavigation<NavigationProp>();
-  const route = useRoute<RegionDetailRouteProp>();
+  const navigation = useNav();
+  const route = useRout() as { params: { regionName: string } };
   const { regionName } = route.params;
 
   const [selectedProvinceName, setSelectedProvinceName] = useState<string>("");
@@ -50,12 +57,12 @@ const RegionDetailScreen: React.FC = () => {
   // 📌 Fetch provinces ตาม regionName
   const fetchProvinces = useCallback(async () => {
     try {
-      const res = await fetch(`${API_BASE_URL}/api/mobile-provinces?regionName=${encodeURIComponent(regionName)}`);
+      const res = await fetch(
+        `${API_BASE_URL}/api/mobile-provinces?regionName=${encodeURIComponent(regionName)}`
+      );
       const data = await res.json();
       setProvinces(data);
-      if (data.length > 0) {
-        setSelectedProvinceName(data[0].name);
-      }
+      if (data.length > 0) setSelectedProvinceName(data[0].name);
     } catch (err) {
       console.error("❌ Error fetching provinces:", err);
     }
@@ -66,7 +73,9 @@ const RegionDetailScreen: React.FC = () => {
     if (!selectedProvinceName) return;
     try {
       setLoading(true);
-      const res = await fetch(`${API_BASE_URL}/api/mobile-districts?provinceId=${encodeURIComponent(selectedProvinceName)}`);
+      const res = await fetch(
+        `${API_BASE_URL}/api/mobile-districts?provinceId=${encodeURIComponent(selectedProvinceName)}`
+      );
       const data = await res.json();
       setDistricts(data);
     } catch (err) {
@@ -78,11 +87,11 @@ const RegionDetailScreen: React.FC = () => {
 
   useEffect(() => {
     fetchProvinces();
-  }, []);
+  }, [fetchProvinces]);
 
   useEffect(() => {
     fetchDistricts();
-  }, [selectedProvinceName]);
+  }, [fetchDistricts]);
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -155,21 +164,9 @@ const RegionDetailScreen: React.FC = () => {
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: "#f8fafc" },
   container: { flex: 1, padding: 16 },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  headerTitle: {
-    fontSize: 24,
-    fontWeight: "800",
-    color: "#1f2937",
-    marginLeft: 10,
-    flexShrink: 1,
-  },
-  backButton: {
-    padding: 5,
-  },
+  header: { flexDirection: "row", alignItems: "center", marginBottom: 20 },
+  headerTitle: { fontSize: 24, fontWeight: "800", color: "#1f2937", marginLeft: 10, flexShrink: 1 },
+  backButton: { padding: 5 },
   label: { fontSize: 16, fontWeight: "600", marginTop: 10, marginBottom: 4 },
   picker: {
     borderWidth: 1,
@@ -190,16 +187,12 @@ const styles = StyleSheet.create({
     shadowRadius: 6,
     elevation: 2,
   },
-  cardContent: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
+  cardContent: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
   districtName: { fontSize: 18, fontWeight: "700", color: "#1f2937" },
   districtLocation: { fontSize: 14, color: "#64748b" },
   flatList: { flex: 1 },
-  flatListContent: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  center: { justifyContent: 'center', alignItems: 'center' },
+  flatListContent: { flex: 1, justifyContent: "center", alignItems: "center" },
+  center: { justifyContent: "center", alignItems: "center" },
 });
 
 export default RegionDetailScreen;

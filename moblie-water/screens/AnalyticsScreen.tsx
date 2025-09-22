@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -7,20 +7,18 @@ import {
   ScrollView,
   Dimensions,
   TouchableOpacity,
+  RefreshControl,
+  useWindowDimensions,
+  Platform,
 } from 'react-native';
 import { LineChart } from 'react-native-chart-kit';
 import { Picker } from '@react-native-picker/picker';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { format } from 'date-fns';
 
-const screenWidth = Dimensions.get('window').width;
 const API_BASE_URL = 'http://192.168.7.118:3001';
 
-interface District {
-  id: string;
-  name: string;
-}
-
+interface District { id: string; name: string; }
 type NumArr = number[];
 
 const safeAvg = (arr: NumArr) =>
@@ -28,7 +26,12 @@ const safeAvg = (arr: NumArr) =>
 const safeMax = (arr: NumArr) => (arr.length ? Math.max(...arr) : 0);
 const safeMin = (arr: NumArr) => (arr.length ? Math.min(...arr) : 0);
 
+// helper: clamp
+const clamp = (v: number, min: number, max: number) => Math.max(min, Math.min(max, v));
+
 const AnalyticsScreen: React.FC = () => {
+  const { width: winWidth } = useWindowDimensions();
+
   const [districts, setDistricts] = useState<District[]>([]);
   const [selectedDistrict, setSelectedDistrict] = useState<string>('');
   const [date, setDate] = useState(new Date());
@@ -39,11 +42,14 @@ const AnalyticsScreen: React.FC = () => {
   const [volume, setVolume] = useState<number[]>([]);
   const [pressure, setPressure] = useState<number[]>([]);
   const [efficiency, setEfficiency] = useState<number[]>([]);
+
   const [loading, setLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   // โหลดเขต
   useEffect(() => {
-    const fetchDistricts = async () => {
+    (async () => {
       try {
         const res = await fetch(`${API_BASE_URL}/api/districts`);
         const json = await res.json();
@@ -51,41 +57,45 @@ const AnalyticsScreen: React.FC = () => {
         if (json.length > 0) setSelectedDistrict(json[0].id);
       } catch (err) {
         console.error('❌ Failed to fetch districts:', err);
+        setError('โหลดรายชื่อเขตไม่สำเร็จ');
       }
-    };
-    fetchDistricts();
+    })();
   }, []);
 
-  // โหลดข้อมูลกราฟ
-  useEffect(() => {
+  const fetchGraphData = useCallback(async () => {
     if (!selectedDistrict || !date) return;
-
-    const fetchGraphData = async () => {
-      setLoading(true);
-      try {
-        const selectedDateStr = format(date, 'yyyy-MM-dd');
-        const res = await fetch(
-          `${API_BASE_URL}/api/district-graph/${selectedDistrict}?date=${selectedDateStr}`
-        );
-        const json = await res.json();
-        setLabels(json.labels || []);
-        setQuality(json.quality || []);
-        setVolume(json.volume || []);
-        setPressure(json.pressure || []);
-        setEfficiency(json.efficiency || []);
-      } catch (err) {
-        console.error('❌ Failed to fetch graph data:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchGraphData();
+    setError(null);
+    setLoading(true);
+    try {
+      const selectedDateStr = format(date, 'yyyy-MM-dd');
+      const res = await fetch(
+        `${API_BASE_URL}/api/district-graph/${selectedDistrict}?date=${selectedDateStr}`
+      );
+      const json = await res.json();
+      setLabels(json.labels || []);
+      setQuality(json.quality || []);
+      setVolume(json.volume || []);
+      setPressure(json.pressure || []);
+      setEfficiency(json.efficiency || []);
+    } catch (err) {
+      console.error('❌ Failed to fetch graph data:', err);
+      setError('โหลดข้อมูลกราฟไม่สำเร็จ');
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
   }, [selectedDistrict, date]);
 
-  // ลดจำนวน label ที่แสดงบนกราฟ
-  const reducedLabels = labels.map((label, index) => (index % 5 === 0 ? label : ''));
+  // โหลดข้อมูลกราฟเมื่อเปลี่ยนเขต/วันที่
+  useEffect(() => { fetchGraphData(); }, [fetchGraphData]);
 
-  // ✅ คำนวณค่าสรุป (memo เพื่อลด re-render)
+  // ลดจำนวน label บนแกน X (memo เพื่อลดงาน render)
+  const reducedLabels = useMemo(
+    () => labels.map((label, index) => (index % 5 === 0 ? label : '')),
+    [labels]
+  );
+
+  // สถิติ (memo)
   const qualityStats = useMemo(
     () => ({ avg: safeAvg(quality), max: safeMax(quality), min: safeMin(quality) }),
     [quality]
@@ -103,47 +113,43 @@ const AnalyticsScreen: React.FC = () => {
     [efficiency]
   );
 
-  // 🧩 การ์ดแสดงสรุป
+  // กว้างของกราฟ: ไม่น้อยกว่าจอ (หัก padding) และไม่เกิน 2000
+  const chartWidth = useMemo(() => {
+    const base = labels.length * 56; // 56px ต่อจุด = แตะพอดีมือถือ
+    return clamp(base, winWidth - 32, 2000);
+  }, [labels.length, winWidth]);
+
+  // Pull-to-refresh
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
+    fetchGraphData();
+  }, [fetchGraphData]);
+
+  // การ์ดสรุป
   const StatsCard = ({
-    titleTH,
-    titleEN,
-    color,
-    stats,
-    unit,
+    titleTH, titleEN, color, stats, unit,
   }: {
-    titleTH: string;
-    titleEN: string;
-    color: string;
-    stats: { avg: number; max: number; min: number };
-    unit?: string;
+    titleTH: string; titleEN: string; color: string;
+    stats: { avg: number; max: number; min: number }; unit?: string;
   }) => (
     <View style={[styles.card, { borderLeftColor: color }]}>
       <Text style={styles.cardTitle}>
         {titleTH} <Text style={styles.cardTitleEN}>({titleEN})</Text>
       </Text>
-      <View style={styles.cardRow}>
-        <Text style={styles.cardLabel}>Avg</Text>
-        <Text style={styles.cardValue}>
-          {stats.avg}{unit ? ` ${unit}` : ''}
-        </Text>
-      </View>
-      <View style={styles.cardRow}>
-        <Text style={styles.cardLabel}>Max</Text>
-        <Text style={styles.cardValue}>
-          {stats.max}{unit ? ` ${unit}` : ''}
-        </Text>
-      </View>
-      <View style={styles.cardRow}>
-        <Text style={styles.cardLabel}>Min</Text>
-        <Text style={styles.cardValue}>
-          {stats.min}{unit ? ` ${unit}` : ''}
-        </Text>
-      </View>
+      <View style={styles.cardRow}><Text style={styles.cardLabel}>Avg</Text>
+        <Text style={styles.cardValue}>{stats.avg}{unit ? ` ${unit}` : ''}</Text></View>
+      <View style={styles.cardRow}><Text style={styles.cardLabel}>Max</Text>
+        <Text style={styles.cardValue}>{stats.max}{unit ? ` ${unit}` : ''}</Text></View>
+      <View style={styles.cardRow}><Text style={styles.cardLabel}>Min</Text>
+        <Text style={styles.cardValue}>{stats.min}{unit ? ` ${unit}` : ''}</Text></View>
     </View>
   );
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
+    <ScrollView
+      contentContainerStyle={styles.container}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+    >
       <Text style={styles.title}>📊 รายงานกราฟข้อมูลน้ำ</Text>
 
       {/* 🔽 Picker เขต */}
@@ -167,7 +173,7 @@ const AnalyticsScreen: React.FC = () => {
         <DateTimePicker
           value={date}
           mode="date"
-          display="default"
+          display={Platform.OS === 'ios' ? 'inline' : 'default'}
           onChange={(_, selectedDate) => {
             setShowPicker(false);
             if (selectedDate) setDate(selectedDate);
@@ -175,40 +181,25 @@ const AnalyticsScreen: React.FC = () => {
         />
       )}
 
-      {/* 📈 Chart: พอดีจอ/เลื่อนแนวนอนได้เมื่อข้อมูลเยอะ */}
+      {/* 📈 Chart */}
       {loading ? (
         <ActivityIndicator size="large" color="#38bdf8" style={{ marginTop: 20 }} />
+      ) : error ? (
+        <Text style={styles.noData}>⚠️ {error}</Text>
       ) : labels.length > 0 ? (
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: 24 }}>
           <LineChart
             data={{
               labels: reducedLabels,
               datasets: [
-                {
-                  data: quality.length > 1 ? quality : [0, ...quality],
-                  color: () => '#3b82f6',
-                  strokeWidth: 2,
-                },
-                {
-                  data: volume.length > 1 ? volume : [0, ...volume],
-                  color: () => '#10b981',
-                  strokeWidth: 2,
-                },
-                {
-                  data: pressure.length > 1 ? pressure : [0, ...pressure],
-                  color: () => '#f59e0b',
-                  strokeWidth: 2,
-                },
-                {
-                  data: efficiency.length > 1 ? efficiency : [0, ...efficiency],
-                  color: () => '#ef4444',
-                  strokeWidth: 2,
-                },
+                { data: quality.length > 1 ? quality : [0, ...quality], color: () => '#3b82f6', strokeWidth: 2 },
+                { data: volume.length > 1 ? volume : [0, ...volume], color: () => '#10b981', strokeWidth: 2 },
+                { data: pressure.length > 1 ? pressure : [0, ...pressure], color: () => '#f59e0b', strokeWidth: 2 },
+                { data: efficiency.length > 1 ? efficiency : [0, ...efficiency], color: () => '#ef4444', strokeWidth: 2 },
               ],
               legend: ['คุณภาพน้ำ', 'ปริมาณน้ำ', 'แรงดัน', 'ประสิทธิภาพ'],
             }}
-            // ✅ กว้างตามจำนวน labels แต่ไม่เล็กกว่าหน้าจอ
-            width={Math.max(screenWidth - 32, labels.length * 60)}
+            width={chartWidth}
             height={300}
             chartConfig={{
               backgroundGradientFrom: '#fff',
@@ -226,39 +217,15 @@ const AnalyticsScreen: React.FC = () => {
         <Text style={styles.noData}>⚠️ ไม่มีข้อมูลสำหรับเขตนี้ในวันที่เลือก</Text>
       )}
 
-      {/* 🧾 สรุปค่าใต้กราฟ (mobile-friendly cards) */}
-      {labels.length > 0 && (
+      {/* 🧾 Summary */}
+      {labels.length > 0 && !error && (
         <>
           <Text style={styles.sectionTitle}>สรุปค่าหลัก (Summary)</Text>
           <View style={styles.cardsWrap}>
-            <StatsCard
-              titleTH="คุณภาพน้ำ"
-              titleEN="Water Quality"
-              color="#3b82f6"
-              stats={qualityStats}
-              unit="" // ใส่หน่วยถ้ามี เช่น 'mg/L'
-            />
-            <StatsCard
-              titleTH="ปริมาณน้ำ"
-              titleEN="Volume"
-              color="#10b981"
-              stats={volumeStats}
-              unit=""
-            />
-            <StatsCard
-              titleTH="แรงดัน"
-              titleEN="Pressure"
-              color="#f59e0b"
-              stats={pressureStats}
-              unit=""
-            />
-            <StatsCard
-              titleTH="ประสิทธิภาพ"
-              titleEN="Efficiency"
-              color="#ef4444"
-              stats={efficiencyStats}
-              unit="%"
-            />
+            <StatsCard titleTH="คุณภาพน้ำ" titleEN="Water Quality" color="#3b82f6" stats={qualityStats} />
+            <StatsCard titleTH="ปริมาณน้ำ" titleEN="Volume" color="#10b981" stats={volumeStats} />
+            <StatsCard titleTH="แรงดัน" titleEN="Pressure" color="#f59e0b" stats={pressureStats} />
+            <StatsCard titleTH="ประสิทธิภาพ" titleEN="Efficiency" color="#ef4444" stats={efficiencyStats} unit="%" />
           </View>
         </>
       )}
@@ -269,58 +236,24 @@ const AnalyticsScreen: React.FC = () => {
 export default AnalyticsScreen;
 
 const styles = StyleSheet.create({
-  container: {
-    padding: 16,
-    backgroundColor: '#e2f2fc',
-    flexGrow: 1,
-  },
-  title: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#1e40af',
-    textAlign: 'center',
-    marginBottom: 16,
-  },
-  pickerWrapper: {
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: '#d1d5db',
-    backgroundColor: '#fff',
-    marginBottom: 20,
-  },
+  container: { padding: 16, backgroundColor: '#e2f2fc', flexGrow: 1 },
+  title: { fontSize: 18, fontWeight: 'bold', color: '#1e40af', textAlign: 'center', marginBottom: 16 },
+  pickerWrapper: { borderRadius: 10, borderWidth: 1, borderColor: '#d1d5db', backgroundColor: '#fff', marginBottom: 20 },
   datePickerContainer: {
-    backgroundColor: '#dbeafe',
-    padding: 14,
-    borderRadius: 24,
-    alignItems: 'center',
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: '#94a3b8',
+    backgroundColor: '#dbeafe', padding: 14, borderRadius: 24, alignItems: 'center',
+    marginBottom: 16, borderWidth: 1, borderColor: '#94a3b8',
   },
-  dateText: {
-    color: '#0284c7',
-    fontSize: 16,
-  },
-  noData: {
-    textAlign: 'center',
-    marginTop: 20,
-    color: '#ef4444',
-    fontSize: 16,
-  },
-  sectionTitle: {
-    marginTop: 20,
-    marginBottom: 8,
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#0f172a',
-  },
+  dateText: { color: '#0284c7', fontSize: 16 },
+  noData: { textAlign: 'center', marginTop: 20, color: '#ef4444', fontSize: 16 },
+  sectionTitle: { marginTop: 20, marginBottom: 8, fontSize: 16, fontWeight: '700', color: '#0f172a' },
   cardsWrap: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 12 as any, // RN ใหม่รองรับ gap แล้ว; ถ้าเวอร์ชันเก่าให้ใช้ margin
+    // ใช้ margin แทน gap เพื่อรองรับ RN เก่า
+    marginHorizontal: -6,
   },
   card: {
-    flexBasis: '48%',
+    width: '48%',
     backgroundColor: '#ffffff',
     borderRadius: 14,
     padding: 12,
@@ -330,30 +263,12 @@ const styles = StyleSheet.create({
     shadowRadius: 6,
     shadowOffset: { width: 0, height: 3 },
     elevation: 2,
+    marginHorizontal: 6,
+    marginBottom: 12,
   },
-  cardTitle: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#0f172a',
-    marginBottom: 8,
-  },
-  cardTitleEN: {
-    fontSize: 12,
-    color: '#64748b',
-    fontWeight: '500',
-  },
-  cardRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingVertical: 3,
-  },
-  cardLabel: {
-    fontSize: 13,
-    color: '#475569',
-  },
-  cardValue: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#111827',
-  },
+  cardTitle: { fontSize: 14, fontWeight: '700', color: '#0f172a', marginBottom: 8 },
+  cardTitleEN: { fontSize: 12, color: '#64748b', fontWeight: '500' },
+  cardRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 3 },
+  cardLabel: { fontSize: 13, color: '#475569' },
+  cardValue: { fontSize: 13, fontWeight: '700', color: '#111827' },
 });

@@ -1,7 +1,7 @@
 // src/lib/activityLogger.ts
 // ไฟล์นี้มีฟังก์ชันสำหรับบันทึกกิจกรรมลงใน Activity Log
 
-import { ActivityLog } from '@/src/types/activityLog'; // สมมติว่าคุณมี Type นี้อยู่แล้ว
+import { ActivityLog } from '../src/types/activityLog'; // สมมติว่าคุณมี Type นี้อยู่แล้ว
 
 /**
  * บันทึกกิจกรรมลงใน Activity Log ของระบบ

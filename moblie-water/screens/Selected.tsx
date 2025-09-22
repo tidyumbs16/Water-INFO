@@ -7,27 +7,28 @@ import {
   FlatList,
   TouchableOpacity,
 } from "react-native";
-import { useNavigation } from "@react-navigation/native";
-import { StackNavigationProp } from "@react-navigation/stack";
 import { ChevronRight } from "lucide-react-native";
 
+const API_BASE_URL = "http://192.168.7.118:3001";
+
 // --- Types ---
-type RootStackParamList = {
-  Stations: undefined;
-  RegionDetail: { regionName: string };
-};
-
-type NavigationProp = StackNavigationProp<RootStackParamList, "Stations">;
-
 interface Region {
   id: string;
   name: string;
 }
 
-const API_BASE_URL = "http://192.168.7.118:3001"; // ✅ ชี้ไปยัง backend จริง
+// ✅ ทำ hook navigation แบบ require runtime
+type NavLike = {
+  navigate: (screen: string, params?: any) => void;
+};
+function useNav(): NavLike {
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  const { useNavigation } = require("@react-navigation/native");
+  return useNavigation();
+}
 
 const SelectedScreen: React.FC = () => {
-  const navigation = useNavigation<NavigationProp>();
+  const navigation = useNav();
   const [regions, setRegions] = useState<Region[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -53,9 +54,7 @@ const SelectedScreen: React.FC = () => {
     <TouchableOpacity
       style={styles.card}
       onPress={() =>
-        navigation.navigate("RegionDetail", {
-          regionName: item.name,
-        })
+        navigation.navigate("RegionDetail", { regionName: item.name })
       }
     >
       <View style={styles.cardContent}>
@@ -91,7 +90,12 @@ const SelectedScreen: React.FC = () => {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#f8fafc", padding: 16 },
   center: { flex: 1, justifyContent: "center", alignItems: "center" },
-  headerTitle: { fontSize: 24, fontWeight: "800", color: "#1f2937", marginBottom: 20 },
+  headerTitle: {
+    fontSize: 24,
+    fontWeight: "800",
+    color: "#1f2937",
+    marginBottom: 20,
+  },
   card: {
     backgroundColor: "#fff",
     padding: 16,

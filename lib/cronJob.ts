@@ -1,5 +1,5 @@
 import cron from "node-cron";
-import pool from "@/lib/db";
+import pool from "../lib/db";
 
 async function generateDailyMetrics() {
   console.log("⏳ เริ่มสุ่มข้อมูล Metrics ประจำวัน...");

@@ -2,18 +2,28 @@ import React, { useEffect, useRef } from "react";
 import { View, Text, TouchableOpacity, Animated, Dimensions, StyleSheet } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { FontAwesome5 } from "@expo/vector-icons";
-import { useNavigation } from "@react-navigation/native";
-import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 
-// Define navigation type
- type RootStackParamList = {
-   Home: undefined;
- };
+// ---- กำหนด type เบื้องต้นของเส้นทางที่ใช้จริง ----
+type RootStackParamList = {
+  Tabs: undefined;
+  Home?: undefined;
+};
+
+// ✅ ฮุกนำทางแบบ require runtime เพื่อหลบ ESM/CJS conflict
+type NavLike = {
+  navigate: (screen: keyof RootStackParamList | string, params?: any) => void;
+  goBack: () => void;
+};
+function useNav(): NavLike {
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  const { useNavigation } = require("@react-navigation/native");
+  return useNavigation();
+}
 
 // Splash / Welcome Screen for AquaFlow
 export default function AquaFlowSplash() {
   const { width, height } = Dimensions.get("window");
-  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const navigation = useNav();
 
   // Floating animations
   const float1 = useRef(new Animated.Value(0)).current;
@@ -78,7 +88,7 @@ export default function AquaFlowSplash() {
             <TouchableOpacity
               style={{ borderRadius: 30, overflow: "hidden", width: "80%", marginBottom: 16 }}
               activeOpacity={0.9}
-              onPress={() => navigation.navigate("Tabs" as never)}
+              onPress={() => navigation.navigate("Tabs")}
             >
               <LinearGradient
                 colors={["#3b82f6", "#0ea5e9"]}
@@ -88,7 +98,7 @@ export default function AquaFlowSplash() {
               </LinearGradient>
             </TouchableOpacity>
             <Text style={{ color: "#475569", fontSize: 14 }}>
-       ยินดีต้อนรับสู่ AquaFlow!
+              ยินดีต้อนรับสู่ AquaFlow!
             </Text>
           </View>
         </LinearGradient>

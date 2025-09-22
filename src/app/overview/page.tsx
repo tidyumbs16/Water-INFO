@@ -1,5 +1,5 @@
 "use client";
-import NavbarComponent from "@/components/navbar";
+import NavbarComponent from "../../../components/navbar";
 import { useState, useEffect } from "react";
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,

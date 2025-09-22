@@ -5,7 +5,7 @@ import dynamic from "next/dynamic";
 
 // ✅ import แบบ dynamic ไม่ใช้ SSR ป้องกัน window is not defined
 const ThailandRegionsMap = dynamic(
-  () => import("../components/LeafletMap"),
+  () => import("../components/LeafletMap").then((mod) => mod.default),
   { ssr: false }
 );
 
