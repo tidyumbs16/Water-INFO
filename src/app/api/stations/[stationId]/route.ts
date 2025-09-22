@@ -5,11 +5,9 @@ export const dynamic = "force-dynamic";
 
 export async function GET(
   request: Request,
-  context: { params: { stationId: string } } | { params: Promise<{ stationId: string }> }
+    { params }: { params: { stationId: string } }
 ) {
-  const resolvedParams = await Promise.resolve(context.params);
-  const { stationId } = resolvedParams;
-
+   const { stationId } = params;
   try {
     const district = await getDistrictById(stationId);
 
