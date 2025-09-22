@@ -12,7 +12,9 @@
     "noEmit": true,
 
     "baseUrl": ".",
-    "paths": { "@/*": ["./*"] }
+    "paths": {
+      "@/*": ["./*"]
+    }
   },
   "include": ["**/*.ts", "**/*.tsx"]
 }
