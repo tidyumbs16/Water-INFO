@@ -1,8 +1,8 @@
 // app/api/admin/users/[id]/route.ts
 
 import { NextRequest, NextResponse } from 'next/server';
-import { authenticateRequest, DecodedToken } from '@/lib/auth'; // Import authentication utilities
-import pool from '@/lib/db'; // Import PostgreSQL pool from your shared library
+import { authenticateRequest, DecodedToken } from '../../../../../../lib/auth'; // Import authentication utilities
+import pool from '../../../../../../lib/db'; // Import PostgreSQL pool from your shared library
 import bcrypt from 'bcrypt';// Import bcryptjs for password hashing
 import { z } from 'zod'; // Import Zod for robust validation
 
@@ -32,7 +32,7 @@ const userUpdateSchema = z.object({
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: any
 ) {
   // 1. Authenticate the request and get user info from the token
   const authResult = authenticateRequest(request);
@@ -48,7 +48,7 @@ export async function GET(
   }
 
   try {
-    const { id } = params;
+    const { id } = context.params;
     if (!id) {
       return NextResponse.json({ message: 'User ID is required' }, { status: 400 });
     }
@@ -70,7 +70,7 @@ export async function GET(
     return NextResponse.json(userData, { status: 200 });
 
   } catch (error) {
-    console.error(`Error fetching user ${params.id}:`, error);
+    console.error(`Error fetching user ${context.params.id}:`, error);
     return NextResponse.json({ message: 'Internal server error while fetching user', error: (error as Error).message }, { status: 500 });
   }
 }
@@ -86,7 +86,7 @@ export async function GET(
  */
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: any
 ) {
   // 1. Authenticate and authorize the request
   const authResult = authenticateRequest(request);
@@ -99,7 +99,7 @@ export async function PUT(
     return NextResponse.json({ message: 'Forbidden: You do not have sufficient permissions.' }, { status: 403 });
   }
 
-  const { id } = params;
+  const { id } = context.params;
   if (!id) {
     return NextResponse.json({ message: 'User ID is required for update' }, { status: 400 });
   }
@@ -184,7 +184,7 @@ export async function PUT(
 
     return NextResponse.json({ message: 'User updated successfully', user: updatedUser }, { status: 200 });
   } catch (error) {
-    console.error(`Error updating user ${params.id}:`, error);
+    console.error(`Error updating user ${context.params.id}:`, error);
     if ((error as any).code === '23505') {
       return NextResponse.json({ message: 'Username or email already exists' }, { status: 409 });
     }
@@ -203,7 +203,7 @@ export async function PUT(
  */
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: any
 ) {
   // 1. Authenticate and authorize the request
   const authResult = authenticateRequest(request);
@@ -216,7 +216,7 @@ export async function DELETE(
     return NextResponse.json({ message: 'Forbidden: You do not have sufficient permissions.' }, { status: 403 });
   }
 
-  const { id } = params;
+  const { id } = context.params;
   if (!id) {
     return NextResponse.json({ message: 'User ID is required for deletion' }, { status: 400 });
   }
@@ -253,7 +253,7 @@ export async function DELETE(
 
     return NextResponse.json({ message: 'User deleted successfully' }, { status: 200 });
   } catch (error) {
-    console.error(`Error deleting user ${params.id}:`, error);
+    console.error(`Error deleting user ${context.params.id}:`, error);
     return NextResponse.json({ message: 'Internal server error while deleting user', error: (error as Error).message }, { status: 500 });
   }
 }

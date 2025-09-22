@@ -2,12 +2,12 @@
   "expo": {
     "name": "moblie-water",
     "slug": "moblie-water",
-    "version": "1.0.0",    
+    "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
+    "icon": "./assets/sea.png",
     "userInterfaceStyle": "light",
     "splash": {
-      "image": "./assets/splash-icon.png",
+      "image": "./assets/splash-icon.png", 
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
@@ -18,7 +18,7 @@
       "versionCode": 1,
       "package": "com.tawan2517.mobliewater",
       "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
+        "foregroundImage": "./assets/sea.png",
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true
@@ -30,6 +30,9 @@
       "eas": {
         "projectId": "100d33e5-e0d5-491f-aae1-983184b0ea54"
       }
-    }
+    },
+    "plugins": [
+      "expo-font"
+    ]
   }
 }

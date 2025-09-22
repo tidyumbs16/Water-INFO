@@ -103,7 +103,7 @@ export default function App() {
     setLoadingMetrics(true);
 
     const params = new URLSearchParams();
-    if (selectedDistrict) params.set("district_id", selectedDistrict);
+    if (selectedDistrict) params.set("districtId", selectedDistrict); // ✅ ใช้ districtId ให้ตรง backend
 
     const end = new Date();
     const start = new Date();
@@ -127,7 +127,18 @@ export default function App() {
     fetch(`${API_ENDPOINTS.metrics}?${params.toString()}`)
       .then((response) => response.json())
       .then((data) => {
-        const allMetrics = (data || []).flatMap((d: any) => d?.data || []);
+        console.log("API response:", data);
+
+        let allMetrics: any[] = [];
+        if (Array.isArray(data)) {
+          if (data.length > 0 && data[0]?.data) {
+            // ✅ แบบ nested { district_id, data: [] }
+            allMetrics = data.flatMap((d: any) => d.data || []);
+          } else {
+            // ✅ แบบ flat array
+            allMetrics = data;
+          }
+        }
 
         if (allMetrics.length === 0) {
           setOverview({ average: {}, trends: [], pieData: [] });
@@ -135,10 +146,10 @@ export default function App() {
         }
 
         const average = {
-          water_quality_avg: allMetrics.reduce((a: number, b: { water_quality: any; }) => a + safeParse(b.water_quality), 0) / (allMetrics.length || 1),
-          water_volume_avg: allMetrics.reduce((a: number, b: { water_volume: any; }) => a + safeParse(b.water_volume), 0) / (allMetrics.length || 1),
-          pressure_avg: allMetrics.reduce((a: number, b: { pressure: any; }) => a + safeParse(b.pressure), 0) / (allMetrics.length || 1),
-          efficiency_avg: allMetrics.reduce((a: number, b: { efficiency: any; }) => a + safeParse(b.efficiency), 0) / (allMetrics.length || 1),
+          water_quality_avg: allMetrics.reduce((a, b) => a + safeParse(b.water_quality), 0) / (allMetrics.length || 1),
+          water_volume_avg: allMetrics.reduce((a, b) => a + safeParse(b.water_volume), 0) / (allMetrics.length || 1),
+          pressure_avg: allMetrics.reduce((a, b) => a + safeParse(b.pressure), 0) / (allMetrics.length || 1),
+          efficiency_avg: allMetrics.reduce((a, b) => a + safeParse(b.efficiency), 0) / (allMetrics.length || 1),
         };
 
         const trends: TrendItem[] = allMetrics.map((m: any) => ({
@@ -176,7 +187,6 @@ export default function App() {
   // ---------- Render ----------
   return (
     <div className="bg-gray-50 font-sans min-h-screen">
-      
       <div className="max-w-7xl mx-auto p-4 md:p-6 lg:p-8 space-y-8">
         <h1 className="text-3xl font-extrabold text-blue-700">💧 Water Dashboard Overview</h1>
 
@@ -245,7 +255,7 @@ export default function App() {
                       labelLine={false}
                       outerRadius={120}
                       dataKey="value"
- label={({ name, percent }) => `${name} ${((percent ?? 0) * 100).toFixed(0)}%`}
+                      label={({ name, percent }) => `${name} ${((percent ?? 0) * 100).toFixed(0)}%`}
                     >
                       {overview.pieData.map((entry, index) => (
                         <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
@@ -303,127 +313,9 @@ export default function App() {
                 <p className="text-gray-400 text-center">ไม่มีข้อมูล</p>
               )}
             </div>
-
-            {/* ตารางย้อนหลัง */}
-            {overview.trends.length > 0 && (
-              <div className="bg-white shadow rounded-xl p-6 overflow-hidden">
-                <h2 className="text-lg font-semibold mb-4 text-gray-700">ตารางข้อมูลย้อนหลัง</h2>
-
-                {/* Desktop Table */}
-                <div className="overflow-x-auto hidden md:block">
-                  <table className="min-w-full border text-sm">
-                    <thead className="bg-gray-100">
-                      <tr>
-                        <th className="border px-3 py-2 text-left font-normal">วันที่</th>
-                        <th className="border px-3 py-2 text-left font-normal">คุณภาพน้ำ (%)</th>
-                        <th className="border px-3 py-2 text-left font-normal">ปริมาณน้ำ (m³)</th>
-                        <th className="border px-3 py-2 text-left font-normal">แรงดัน (PSI)</th>
-                        <th className="border px-3 py-2 text-left font-normal">ประสิทธิภาพ (%)</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {currentRows.map((row, i) => (
-                        <tr key={i} className="text-center">
-                          <td className="border px-3 py-1 text-left">{row.date}</td>
-                          <td className="border px-3 py-1 text-left">{safeNumberFormat(row.water_quality_avg)}</td>
-                          <td className="border px-3 py-1 text-left">{safeNumberFormat(row.water_volume_avg)}</td>
-                          <td className="border px-3 py-1 text-left">{safeNumberFormat(row.pressure_avg)}</td>
-                          <td className="border px-3 py-1 text-left">{safeNumberFormat(row.efficiency_avg)}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-
-                {/* Mobile Card View */}
-                <div className="md:hidden space-y-4">
-                  {currentRows.map((row, i) => (
-                    <div key={i} className="border rounded-lg p-4 shadow-sm bg-gray-50">
-                      <p className="text-sm text-gray-600"><span className="font-semibold">วันที่:</span> {row.date}</p>
-                      <p className="text-sm text-gray-600"><span className="font-semibold">คุณภาพน้ำ:</span> {safeNumberFormat(row.water_quality_avg)} %</p>
-                      <p className="text-sm text-gray-600"><span className="font-semibold">ปริมาณน้ำ:</span> {safeNumberFormat(row.water_volume_avg)} m³</p>
-                      <p className="text-sm text-gray-600"><span className="font-semibold">แรงดัน:</span> {safeNumberFormat(row.pressure_avg)} PSI</p>
-                      <p className="text-sm text-gray-600"><span className="font-semibold">ประสิทธิภาพ:</span> {safeNumberFormat(row.efficiency_avg)} %</p>
-                    </div>
-                  ))}
-                </div>
-
-                {/* Pagination + Dropdown */}
-                <div className="flex flex-col md:flex-row justify-between items-center mt-4 gap-3">
-                  {/* Dropdown เลือกจำนวนแถว */}
-                  <div className="flex items-center gap-2">
-                    <label htmlFor="rowsPerPage" className="text-gray-600 text-sm">แถวต่อหน้า:</label>
-                    <select
-                      id="rowsPerPage"
-                      value={rowsPerPage}
-                      onChange={(e) => {
-                        const value = e.target.value;
-                        if (value === "all") {
-                          setRowsPerPage("all");
-                        } else {
-                          const num = Number(value);
-                          setRowsPerPage([10, 20, 50].includes(num) ? num : 10);
-                        }
-                        setCurrentPage(1);
-                      }}
-                      className="p-1 border border-gray-300 rounded"
-                    >
-                      <option value={10}>10</option>
-                      <option value={20}>20</option>
-                      <option value={50}>50</option>
-                      <option value="all">ทั้งหมด</option>
-                    </select>
-                  </div>
-
-                  {/* Pagination */}
-                  {rowsPerPage !== "all" && (
-                    <div className="flex items-center gap-2">
-                      <button
-                        className="px-3 py-1 bg-gray-200 rounded disabled:opacity-50"
-                        disabled={currentPage === 1}
-                        onClick={() => setCurrentPage(1)}
-                      >
-                        ⏮ หน้าแรก
-                      </button>
-                      <button
-                        className="px-3 py-1 bg-gray-200 rounded disabled:opacity-50"
-                        disabled={currentPage === 1}
-                        onClick={() => setCurrentPage((prev) => prev - 1)}
-                      >
-                        ◀ ก่อนหน้า
-                      </button>
-                      {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                        <button
-                          key={page}
-                          onClick={() => setCurrentPage(page)}
-                          className={`px-3 py-1 rounded ${currentPage === page ? "bg-blue-500 text-white" : "bg-gray-200"}`}
-                        >
-                          {page}
-                        </button>
-                      ))}
-                      <button
-                        className="px-3 py-1 bg-gray-200 rounded disabled:opacity-50"
-                        disabled={currentPage === totalPages}
-                        onClick={() => setCurrentPage((prev) => prev + 1)}
-                      >
-                        ถัดไป ▶
-                      </button>
-                      <button
-                        className="px-3 py-1 bg-gray-200 rounded disabled:opacity-50"
-                        disabled={currentPage === totalPages}
-                        onClick={() => setCurrentPage(totalPages)}
-                      >
-                        หน้าสุดท้าย ⏭
-                      </button>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
           </>
         )}
       </div>
     </div>
-  
   );
 }

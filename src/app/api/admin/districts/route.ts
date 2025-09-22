@@ -2,7 +2,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { Pool } from 'pg';
-import { verifyToken, DecodedToken } from '@/lib/auth'; // ตรวจสอบว่า import ถูกต้อง
+import { verifyToken, DecodedToken } from '../../../../../lib/auth'; // ตรวจสอบว่า import ถูกต้อง
 import { District } from '../../../../../lib/definitions'; // ตรวจสอบว่า import ถูกต้อง
 
 // Initialize PostgreSQL connection pool

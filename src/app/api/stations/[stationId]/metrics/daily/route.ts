@@ -1,15 +1,16 @@
 // app/api/stations/[stationId]/metrics/daily/route.ts
 import { NextResponse } from "next/server";
-import pool from "@/lib/db";
+import pool from "../../../../../../../lib/db";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(
   request: Request,
-  { params }: { params: { stationId: string } }
+  context: { params: Promise<{ stationId: string }> }
 ) {
   try {
-    const { stationId } = await params; // ✅ ต้อง await ใน Next.js 13+
+    const { stationId } = await context.params; // ✅ ต้อง await
+
     const today = new Date().toISOString().split("T")[0];
 
     const query = `
@@ -19,7 +20,7 @@ export async function GET(
       LIMIT 1;
     `;
 
-    const result = await pool !.query(query, [stationId, today]);
+    const result = await pool!.query(query, [stationId, today]);
 
     if (result.rows.length === 0) {
       return NextResponse.json(

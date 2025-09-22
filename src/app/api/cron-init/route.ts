@@ -1,4 +1,4 @@
-import "@/scripts/dailyMetricsCron";
+import "../../../../scripts/seedPastMetrics";
 
 export async function GET() {
   return new Response("Cron job started", { status: 200 });

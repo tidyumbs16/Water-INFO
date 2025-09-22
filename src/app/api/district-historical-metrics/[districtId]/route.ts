@@ -1,5 +1,5 @@
 
-import pool from '@/lib/db'; 
+import pool from '../../../../../lib/db'; 
 import { NextResponse } from 'next/server'; 
 
 
@@ -13,11 +13,6 @@ interface HistoricalMetric {
 }
 
 
-interface RouteContext {
-  params: {
-    districtId: string; // The dynamic segment [districtId] from the URL, always a string.
-  };
-}
 
 /**
  * @function GET
@@ -25,10 +20,10 @@ interface RouteContext {
  
  *
  * @param {Request} request - The incoming Next.js Request object.
- * @param {RouteContext} context - The context object containing dynamic route parameters.
+ * @param {any} context - The context object containing dynamic route parameters.
  * @returns {Promise<NextResponse>} A JSON response with historical data or an error.
  */
-export async function GET(request: Request, context: RouteContext) {
+export async function GET(request: Request, context: any) {
   try {
     // Extract districtId from context.params, as it's a dynamic route segment.
     const districtId = context.params.districtId;

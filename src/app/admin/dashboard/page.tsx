@@ -2,7 +2,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { Sensor, District } from '@/src/types/index';
+import { Sensor, District } from '../../../../src/types/index';
 import {
   Home,
   BarChart3,

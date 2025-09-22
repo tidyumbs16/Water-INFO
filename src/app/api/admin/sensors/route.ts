@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import pool from '@/lib/db'; // นำเข้า pool โดยตรง
+import pool from '../../../../../lib/db'; // นำเข้า pool โดยตรง
 import jwt from 'jsonwebtoken';
 import { Sensor } from '../../../interfaces/index'; // ตรวจสอบ Path ของ interfaces ให้ถูกต้อง
 

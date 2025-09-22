@@ -2,8 +2,8 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 // ตรวจสอบให้แน่ใจว่า path ของไฟล์เหล่านี้ถูกต้อง
-import { authenticateRequest } from '@/lib/auth';
-import pool from '@/lib/db';
+import { authenticateRequest } from '../../../../../lib/auth';
+import pool from '../../../../../lib/db';
 import bcrypt from 'bcrypt'; // Ensure bcryptjs is installed and types are available
 import { z } from 'zod';
 

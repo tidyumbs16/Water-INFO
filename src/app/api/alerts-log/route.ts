@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { pool } from '@/lib/db'; // Import query function for database
+import { pool } from '../../../../lib/db'; // Import query function for database
 import { AlertLog } from '../../interfaces/index'; // Check the path to your interfaces
 
 export async function GET(req: NextRequest) {

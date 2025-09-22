@@ -3,8 +3,9 @@ import React, { useState } from "react";
 import { HeroUIProvider, ToastProvider } from "@heroui/react";
 import Footer from "../../../../components/footer";
 import WaterDashboard from "../../../../components/waterdashboard/Waterdashboard";
-import NavbarComponent from "@/components/navbar";
+import NavbarComponent from "../../../../components/navbar";
 import DailyMetricsViewer from "../../../../components/DailyMetricsViewer";
+import Chatbot from "components/Chatbot";
 
 const Home: React.FC = () => {
   const [selectedDistrictId, setSelectedDistrictId] = useState<string>("");
@@ -34,9 +35,9 @@ const Home: React.FC = () => {
             </div>
           </div>
         </main>
-
+      <Footer />
         {/* Footer ติดล่าง */}
-        <Footer />
+  <Chatbot  />
       </div>
     </HeroUIProvider>
   );

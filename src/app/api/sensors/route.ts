@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import pool from '@/lib/db'; // ตรวจสอบ Path ของ lib/db ให้ถูกต้อง (ใช้ alias @ ได้ถ้าตั้งค่าใน tsconfig.json)
-import { Sensor } from '@/src/types/index'; // ตรวจสอบ Path ของ types/data ให้ถูกต้อง
+import pool from '../../../../lib/db'; // ตรวจสอบ Path ของ lib/db ให้ถูกต้อง (ใช้ alias @ ได้ถ้าตั้งค่าใน tsconfig.json)
+import { Sensor } from '../../../../src/types/index'; // ตรวจสอบ Path ของ types/data ให้ถูกต้อง
 import jwt from 'jsonwebtoken'; // นำเข้า jsonwebtoken
 
 export async function GET(request: NextRequest) { // เปลี่ยนจาก Request เป็น NextRequest เพื่อเข้าถึง headers

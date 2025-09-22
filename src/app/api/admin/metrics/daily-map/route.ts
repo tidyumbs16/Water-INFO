@@ -1,7 +1,7 @@
 // app/api/admin/metrics/daily/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { Pool } from "pg";
-import { verifyToken } from "@/lib/auth";
+import { verifyToken } from "../../../../../../lib/auth";
 
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 

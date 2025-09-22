@@ -1,7 +1,7 @@
 // File: pages/api/admin/register.ts (for a Next.js API route)
 
 import { NextRequest, NextResponse } from 'next/server';
-import pool from '@/lib/db'; // Import your database connection pool
+import pool from '../../../../../lib/db'; // Import your database connection pool
 import bcrypt from 'bcrypt';
 
 export async function POST(req: NextRequest) {

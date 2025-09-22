@@ -1,6 +1,15 @@
 "use client";
 import React, { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import {
+  Droplets,
+  Activity,
+  Gauge,
+  BarChart3,
+  TrendingUp,
+  TrendingDown,
+  Minus,
+} from "lucide-react";
 
 interface District {
   district_id: string;
@@ -32,12 +41,12 @@ const formatNumber = (value: any, digits: number = 2, fallback: string = "-") =>
 
 // 🛠 trend icon
 const renderTrendIcon = (trend: number | string | null) => {
-  if (trend === null) return "➖";
+  if (trend === null) return <Minus className="h-6 w-6" />;
   const val = Number(trend);
-  if (isNaN(val)) return "➖";
-  if (val > 0) return "📈";
-  if (val < 0) return "📉";
-  return "➖";
+  if (isNaN(val)) return <Minus className="h-6 w-6" />;
+  if (val > 0) return <TrendingUp className="h-6 w-6 text-emerald-300" />;
+  if (val < 0) return <TrendingDown className="h-6 w-6 text-red-300" />;
+  return <Minus className="h-6 w-6" />;
 };
 
 // 🛠 summary
@@ -49,10 +58,10 @@ const generateSummary = (metrics: DistrictMetrics, days: number) => {
 
   return (
     `${prefix}\n` +
-    `- คุณภาพน้ำ: ${formatNumber(metrics.water_quality, 2)} pH → ${renderTrendIcon(metrics.quality_trend)}\n` +
-    `- ปริมาณน้ำ: ${formatNumber(metrics.water_volume, 0)} L → ${renderTrendIcon(metrics.volume_trend)}\n` +
-    `- ความดัน: ${formatNumber(metrics.pressure, 2)} psi → ${renderTrendIcon(metrics.pressure_trend)}\n` +
-    `- ประสิทธิภาพ: ${formatNumber(metrics.efficiency, 1)} % → ${renderTrendIcon(metrics.efficiency_trend)}`
+    `- คุณภาพน้ำ: ${formatNumber(metrics.water_quality, 2)} pH → ${metrics.quality_trend}\n` +
+    `- ปริมาณน้ำ: ${formatNumber(metrics.water_volume, 0)} L → ${metrics.volume_trend}\n` +
+    `- ความดัน: ${formatNumber(metrics.pressure, 2)} psi → ${metrics.pressure_trend}\n` +
+    `- ประสิทธิภาพ: ${formatNumber(metrics.efficiency, 1)} % → ${metrics.efficiency_trend}`
   );
 };
 
@@ -82,43 +91,42 @@ export default function WaterDashboard({ onDistrictSelect }: WaterDashboardProps
   }, [onDistrictSelect]);
 
   // โหลด metrics ของเขตที่เลือก
-useEffect(() => {
-  if (!selectedDistrict) return;
-  onDistrictSelect?.(selectedDistrict);
+  useEffect(() => {
+    if (!selectedDistrict) return;
+    onDistrictSelect?.(selectedDistrict);
 
-const fetchMetrics = async () => {
-  try {
-    const url =
-      days > 0
-        ? `/api/water-data/${selectedDistrict}?days=${days}`
-        : `/api/water-data/${selectedDistrict}`;
+    const fetchMetrics = async () => {
+      try {
+        const url =
+          days > 0
+            ? `/api/water-data/${selectedDistrict}?days=${days}`
+            : `/api/water-data/${selectedDistrict}`;
 
-    const res = await fetch(url);
-    if (!res.ok) throw new Error("Failed to fetch metrics");
+        const res = await fetch(url);
+        if (!res.ok) throw new Error("Failed to fetch metrics");
 
-    const data = await res.json();
+        const data = await res.json();
 
-    // ✅ เลือกชุดข้อมูลตาม days
-    if (days === 0) {
-      setMetrics(data.latest || null);
-    } else if (days === 7) {
-      setMetrics(data.avg7days || null);
-    } else if (days === 30) {
-      setMetrics(data.avg30days || null);
-    }
-  } catch (err) {
-    console.error("Error loading metrics:", err);
-  }
-};
-  fetchMetrics();
-}, [selectedDistrict, days, onDistrictSelect]);
+        if (days === 0) {
+          setMetrics(data.latest || null);
+        } else if (days === 7) {
+          setMetrics(data.avg7days || null);
+        } else if (days === 30) {
+          setMetrics(data.avg30days || null);
+        }
+      } catch (err) {
+        console.error("Error loading metrics:", err);
+      }
+    };
+    fetchMetrics();
+  }, [selectedDistrict, days, onDistrictSelect]);
 
   return (
     <div className="p-6 space-y-6">
       {/* Dropdowns */}
-      <div className="flex gap-4 flex-wrap">
+      <div className="flex gap-4 flex-wrap items-center">
         <select
-          className="bg-gray-800 text-white p-3 rounded-lg text-lg"
+          className="bg-white/80 text-gray-800 p-3 rounded-xl text-base shadow-md border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:outline-none"
           value={selectedDistrict}
           onChange={(e) => setSelectedDistrict(e.target.value)}
         >
@@ -130,7 +138,7 @@ const fetchMetrics = async () => {
         </select>
 
         <select
-          className="bg-gray-800 text-white p-3 rounded-lg text-lg"
+          className="bg-white/80 text-gray-800 p-3 rounded-xl text-base shadow-md border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:outline-none"
           value={days}
           onChange={(e) => setDays(parseInt(e.target.value))}
         >
@@ -140,93 +148,106 @@ const fetchMetrics = async () => {
         </select>
       </div>
 
+      {/* 🟢 Overview Card */}
+      {metrics && (
+        <div className="p-6 rounded-2xl shadow-lg bg-gradient-to-r from-indigo-500 to-blue-600 text-white">
+          <h2 className="text-xl font-bold mb-3">🌍 ภาพรวมเขต {districts.find(d => d.district_id === selectedDistrict)?.district_name}</h2>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+            <div>
+              <Droplets className="mx-auto h-6 w-6" />
+              <p className="mt-1 text-sm">คุณภาพน้ำ</p>
+              <p className="font-bold text-lg">{formatNumber(metrics.water_quality, 2)} pH</p>
+            </div>
+            <div>
+              <Activity className="mx-auto h-6 w-6" />
+              <p className="mt-1 text-sm">ปริมาณน้ำ</p>
+              <p className="font-bold text-lg">{formatNumber(metrics.water_volume, 0)} L</p>
+            </div>
+            <div>
+              <Gauge className="mx-auto h-6 w-6" />
+              <p className="mt-1 text-sm">ความดัน</p>
+              <p className="font-bold text-lg">{formatNumber(metrics.pressure, 2)} psi</p>
+            </div>
+            <div>
+              <BarChart3 className="mx-auto h-6 w-6" />
+              <p className="mt-1 text-sm">ประสิทธิภาพ</p>
+              <p className="font-bold text-lg">{formatNumber(metrics.efficiency, 1)} %</p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Metrics Cards */}
       <AnimatePresence mode="wait">
         {metrics && (
           <motion.div
             key={`${selectedDistrict}-${days}`}
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.9 }}
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 12 }}
             transition={{ duration: 0.4 }}
             className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6"
           >
-            <div className="p-6 bg-blue-500 text-white rounded-xl shadow-lg">
-              <div className="text-xl font-semibold">คุณภาพน้ำ</div>
+            {/* การ์ดคุณภาพน้ำ */}
+            <div className="p-6 rounded-2xl shadow-lg bg-gradient-to-br from-blue-500 to-indigo-600 text-white">
+              <h3 className="flex items-center gap-2 text-lg font-semibold">
+                <Droplets className="h-5 w-5" /> คุณภาพน้ำ
+              </h3>
               <div className="flex items-center mt-3">
-                <span className="text-3xl">{renderTrendIcon(metrics.quality_trend)}</span>
+                {renderTrendIcon(metrics.quality_trend)}
                 <span className="ml-3 text-2xl font-bold">
                   {formatNumber(metrics.water_quality, 2)} pH
                 </span>
               </div>
             </div>
 
-            <div className="p-6 bg-green-500 text-white rounded-xl shadow-lg">
-              <div className="text-xl font-semibold">ปริมาณน้ำ</div>
+            {/* การ์ดปริมาณน้ำ */}
+            <div className="p-6 rounded-2xl shadow-lg bg-gradient-to-br from-green-500 to-emerald-600 text-white">
+              <h3 className="flex items-center gap-2 text-lg font-semibold">
+                <Activity className="h-5 w-5" /> ปริมาณน้ำ
+              </h3>
               <div className="flex items-center mt-3">
-                <span className="text-3xl">{renderTrendIcon(metrics.volume_trend)}</span>
+                {renderTrendIcon(metrics.volume_trend)}
                 <span className="ml-3 text-2xl font-bold">
                   {formatNumber(metrics.water_volume, 0)} L
                 </span>
               </div>
             </div>
 
-            <div className="p-6 bg-orange-500 text-white rounded-xl shadow-lg">
-              <div className="text-xl font-semibold">ความดัน</div>
+            {/* การ์ดความดัน */}
+            <div className="p-6 rounded-2xl shadow-lg bg-gradient-to-br from-orange-400 to-red-500 text-white">
+              <h3 className="flex items-center gap-2 text-lg font-semibold">
+                <Gauge className="h-5 w-5" /> ความดัน
+              </h3>
               <div className="flex items-center mt-3">
-                <span className="text-3xl">{renderTrendIcon(metrics.pressure_trend)}</span>
+                {renderTrendIcon(metrics.pressure_trend)}
                 <span className="ml-3 text-2xl font-bold">
                   {formatNumber(metrics.pressure, 2)} psi
                 </span>
               </div>
             </div>
 
-            <div className="p-6 bg-purple-500 text-white rounded-xl shadow-lg">
-              <div className="text-xl font-semibold">ประสิทธิภาพ</div>
+            {/* การ์ดประสิทธิภาพ */}
+            <div className="p-6 rounded-2xl shadow-lg bg-gradient-to-br from-purple-500 to-pink-600 text-white">
+              <h3 className="flex items-center gap-2 text-lg font-semibold">
+                <BarChart3 className="h-5 w-5" /> ประสิทธิภาพ
+              </h3>
               <div className="flex items-center mt-3">
-                <span className="text-3xl">{renderTrendIcon(metrics.efficiency_trend)}</span>
+                {renderTrendIcon(metrics.efficiency_trend)}
                 <span className="ml-3 text-2xl font-bold">
                   {formatNumber(metrics.efficiency, 1)} %
                 </span>
-              </div>
-            </div>
-
-            {/* Trend cards */}
-            <div className="p-6 bg-cyan-600 text-white rounded-xl shadow-lg">
-              <div className="text-xl font-semibold">แนวโน้มคุณภาพ</div>
-              <div className="flex items-center mt-3 text-3xl">
-                {formatNumber(metrics.quality_trend, 1)}
-              </div>
-            </div>
-
-            <div className="p-6 bg-lime-600 text-white rounded-xl shadow-lg">
-              <div className="text-xl font-semibold">แนวโน้มปริมาณ</div>
-              <div className="flex items-center mt-3 text-3xl">
-                {formatNumber(metrics.volume_trend, 1)}
-              </div>
-            </div>
-
-            <div className="p-6 bg-yellow-600 text-white rounded-xl shadow-lg">
-              <div className="text-xl font-semibold">แนวโน้มความดัน</div>
-              <div className="flex items-center mt-3 text-3xl">
-                {formatNumber(metrics.pressure_trend, 1)}
-              </div>
-            </div>
-
-            <div className="p-6 bg-pink-600 text-white rounded-xl shadow-lg">
-              <div className="text-xl font-semibold">แนวโน้มประสิทธิภาพ</div>
-              <div className="flex items-center mt-3 text-3xl">
-                {formatNumber(metrics.efficiency_trend, 1)}
               </div>
             </div>
           </motion.div>
         )}
       </AnimatePresence>
 
+      {/* 📝 Summary */}
       {metrics && (
-        <div className="bg-gray-900 p-4 rounded-lg text-white mt-6 shadow-lg">
-          <h2 className="text-lg font-semibold text-blue-400">📝 ข้อมูลสรุป</h2>
-          <pre className="mt-3 whitespace-pre-wrap leading-relaxed">
+        <div className="bg-white/90 backdrop-blur-md p-6 rounded-2xl text-gray-900 shadow-xl border border-gray-200">
+          <h2 className="text-lg font-bold text-blue-600">📝 ข้อมูลสรุป</h2>
+          <pre className="mt-3 whitespace-pre-wrap leading-relaxed text-sm text-gray-700">
             {generateSummary(metrics, days)}
           </pre>
         </div>

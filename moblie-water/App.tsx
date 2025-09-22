@@ -1,16 +1,17 @@
-// App.tsx (หรือไฟล์ที่คุณกำหนด RootStackParamList)
-import 'react-native-gesture-handler'; 
+import 'react-native-gesture-handler';
 import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 
-// Import หน้าจอต่างๆ
-import HomeScreen from './screens/HomeScreen';
-import StationDetailScreen from './screens/StationDetailScreen';
-import LoadingScreen from './screens/LoadingScreen';
-
+// Stack screens
 import Main from './screens/Main';
-import SelectedScreen from './screens/Selected'
+import LoadingScreen from './screens/LoadingScreen';
+import StationDetailScreen from './screens/StationDetailScreen';
+import RegionDetailScreen from './screens/RegionDetailScreen';
+// Tab Navigator
+import MainTabs from './screens/MainTabs';
+import { Home } from 'lucide-react-native';
+import AnalyticsScreen from './screens/AnalyticsScreen';
 
 // Define the params type for StationDetail route
 export type StationDetailParams = {
@@ -19,11 +20,13 @@ export type StationDetailParams = {
 };
 
 export type RootStackParamList = {
-  Main: undefined;
-  LoadingScreen: undefined;
-  Home: undefined;
-  Selected: undefined;
+  Main: undefined;              // splash/welcome
+  LoadingScreen: undefined; 
+    Home: undefined;      // loading
+  Tabs: undefined;       
+  RegionDetail: undefined;       // 👈 bottom tab navigator
   StationDetail: StationDetailParams;
+  Analytics: undefined;
 };
 
 const Stack = createStackNavigator<RootStackParamList>();
@@ -32,12 +35,26 @@ const App: React.FC = () => {
   return (
     <NavigationContainer>
       <Stack.Navigator initialRouteName="Main">
-         <Stack.Screen name="Main" component={Main} options={{ headerShown: false }} />
-        <Stack.Screen name="LoadingScreen"component={LoadingScreen}options={{ headerShown: false }} />
-        <Stack.Screen name="Home" component={HomeScreen}  options={{headerShown: false}}/>
-       <Stack.Screen  name="Selected" component={SelectedScreen} options={{ title: 'เลือกเขตประปา' }} />
-        <Stack.Screen name="StationDetail" component={StationDetailScreen} initialParams={{ districtId: '', districtName: '' }}options={{ title: 'รายละเอียดเขตประปา' }}
+        {/* Splash / Welcome */}
+        <Stack.Screen name="Main" component={Main} options={{ headerShown: false }} />
+
+        {/* Loading */}
+        <Stack.Screen name="LoadingScreen" component={LoadingScreen} options={{ headerShown: false }} />
+        <Stack.Screen name="Home" component={Home} options={{ headerShown: false }} />
+
+        {/* Bottom Tabs (Home, Selected, Notifications, Profile) */}
+        <Stack.Screen name="Tabs" component={MainTabs} options={{ headerShown: false }} />
+
+ <Stack.Screen name="RegionDetail" component={RegionDetailScreen} options={{ headerShown: false }} />
+        {/* Station detail page */}
+        <Stack.Screen
+          name="StationDetail"
+          component={StationDetailScreen}
+          initialParams={{ districtId: '', districtName: '' }}
+          options={{ title: 'รายละเอียดเขตประปา' }}
         />
+        <Stack.Screen name="Analytics" component={AnalyticsScreen} />
+
       </Stack.Navigator>
     </NavigationContainer>
   );

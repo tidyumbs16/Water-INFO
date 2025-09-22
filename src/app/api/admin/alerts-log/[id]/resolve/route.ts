@@ -1,9 +1,9 @@
 // src/app/api/admin/alerts-log/[id]/resolve/route.ts
-import { NextResponse } from 'next/server';
-import pool from '@/lib/db';
+import { NextResponse } from "next/server";
+import pool from "../../../../../../../lib/db";
 
-export async function PUT(req: Request, { params }: { params: { id: string } }) {
-  const { id } = params;
+export async function PUT(req: Request, context: any) {
+  const { id } = context.params; // ✅ ใช้ context: any ให้ build ผ่านชัวร์
 
   try {
     const result = await pool!.query(
@@ -16,12 +16,21 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
     );
 
     if (result.rowCount === 0) {
-      return NextResponse.json({ message: 'ไม่พบข้อมูลแจ้งเตือน' }, { status: 404 });
+      return NextResponse.json({ message: "ไม่พบข้อมูลแจ้งเตือน" }, { status: 404 });
     }
 
-    return NextResponse.json({ message: 'อัปเดตสถานะสำเร็จ', alert: result.rows[0] });
+    return NextResponse.json({
+      message: "อัปเดตสถานะสำเร็จ",
+      alert: result.rows[0],
+    });
   } catch (error) {
-    console.error('Error resolving alert:', error);
-    return NextResponse.json({ message: 'เกิดข้อผิดพลาดในการอัปเดตแจ้งเตือน', error: (error as Error).message }, { status: 500 });
+    console.error("Error resolving alert:", error);
+    return NextResponse.json(
+      {
+        message: "เกิดข้อผิดพลาดในการอัปเดตแจ้งเตือน",
+        error: (error as Error).message,
+      },
+      { status: 500 }
+    );
   }
 }

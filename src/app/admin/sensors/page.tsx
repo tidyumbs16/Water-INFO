@@ -14,7 +14,7 @@ import {
   Database,
 } from "lucide-react";
 // *** สำคัญมาก: ตรวจสอบ Path ของ types/index ให้ถูกต้องตามโครงสร้างโปรเจกต์ของคุณ ***
-import { Sensor, District } from "@/src/types/index"; // ตรวจสอบ path ให้ถูกต้อง
+import { Sensor, District } from "../../../../src/types/index"; // ตรวจสอบ path ให้ถูกต้อง
 
 // กำหนด URL ของ Backend
 const BACKEND_URL =

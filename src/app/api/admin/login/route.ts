@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import pool from '@/lib/db'; // นำเข้าฟังก์ชัน query สำหรับ Database
+import pool from '../../../../../lib/db'; // นำเข้าฟังก์ชัน query สำหรับ Database
 import jwt from 'jsonwebtoken'; // นำเข้า jsonwebtoken
 
 export async function POST(req: NextRequest) {

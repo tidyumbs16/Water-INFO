@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getDistrictById } from "@/lib/db";
+import { getDistrictById } from "../../../../../lib/db";
 
 export const dynamic = "force-dynamic";
 

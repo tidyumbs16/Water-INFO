@@ -3,7 +3,7 @@
   import { View, Text, ActivityIndicator, StyleSheet, ImageBackground } from 'react-native';
 
 
-  const API_BASE_URL = 'http://192.168.6.131:3001'; 
+  const API_BASE_URL = '3000'; 
   const LoadingScreen: React.FC = () => {
     return (
       

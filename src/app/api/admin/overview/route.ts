@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import pool from "@/lib/db";
+import pool from "../../../../../lib/db";
 
 export async function GET(req: Request) {
   let client;
@@ -59,7 +59,7 @@ export async function GET(req: Request) {
     `;
     const trendResult = await client.query(trendQuery);
 
-    const trends = trendResult.rows.map(r => ({
+    const trends = trendResult.rows.map((r: { date_only: any; }) => ({
       ...r,
       date: r.date_only, // ✅ ใช้ date_only ที่ตัดเวลาออกแล้ว
     }));

@@ -1,7 +1,7 @@
 // src/app/api/district-summary-metrics/route.ts
 import { NextResponse } from 'next/server';
-import { DistrictSummaryMetrics } from '@/src/types/index'; // สมมติว่าคุณตั้งค่า Path Alias @/types
-import pool from '@/lib/db'; // สมมติว่าคุณตั้งค่า Path Alias @/lib/db
+import { DistrictSummaryMetrics } from '../../../../src/types/index'; // สมมติว่าคุณตั้งค่า Path Alias @/types
+import pool from '../../../../lib/db'; // สมมติว่าคุณตั้งค่า Path Alias @/lib/db
 
 export async function GET() {
   let client;

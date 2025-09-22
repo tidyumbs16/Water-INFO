@@ -1,4 +1,4 @@
-import { pool } from "@/lib/db"; // ตรวจสอบ path ให้ตรง
+import { pool } from "../../../../lib/db"; // ตรวจสอบ path ให้ตรง
 
 export interface District {
   id: string;

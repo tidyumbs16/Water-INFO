@@ -1,14 +1,13 @@
 // src/app/api/water-data/[districtId]/route.ts
 import { NextResponse } from "next/server";
-import pool from "@/lib/db";
+import pool from "../../../../../lib/db";
 
 export async function GET(
-  request: Request,
-  { params }: { params: Promise<{ districtId: string }> }
+  _request: Request,
+  context: { params: Promise<{ districtId: string }> }
 ) {
   try {
-    // 🔑 ต้อง await params ก่อน
-    const { districtId } = await params;
+    const { districtId } = await context.params; // ✅ await
 
     const query = `
       WITH latest AS (
@@ -61,8 +60,7 @@ export async function GET(
         (SELECT row_to_json(avg30)   FROM avg30)   AS avg30days;
     `;
 
-    //กรณีเป็นค่า text
-     const result = await pool !.query(query, [String(districtId)]);
+    const result = await pool!.query(query, [String(districtId)]);
 
     return NextResponse.json(result.rows[0] || {});
   } catch (error) {

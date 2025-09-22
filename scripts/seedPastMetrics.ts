@@ -1,5 +1,5 @@
 // scripts/dailyMetricsSeed.ts
-import pool from "@/lib/db";
+import pool from "../lib/db";
 import dayjs from "dayjs";
 
 // ------------------ Helper ------------------

@@ -1,21 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { pool } from '@/lib/db'; // Import query function for database
+import { pool } from '../../../../../../lib/db'; // Import query function for database
 
-export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(req: NextRequest, context: any) {
   // --- Authentication Token Check ---
   const authHeader = req.headers.get('Authorization');
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
     return NextResponse.json({ message: 'Unauthorized: No Token provided' }, { status: 401 });
   }
-  const token = authHeader.split(' ')[1];
+  const token = authHeader.split(' ')[1]; // Corrected: Access params from context
   // Replace 'my-secret-admin-token' with your actual token validation logic
   if (token !== 'my-secret-admin-token') {
     return NextResponse.json({ message: 'Forbidden: Invalid Token' }, { status: 403 });
   }
   // --- End Authentication Token Check ---
 
-  const { id } = params; // Get Alert Log ID from URL parameters
-  const { is_resolved } = await req.json(); // Get is_resolved status from request body
+  const { id } = context.params; // Get Alert Log ID from URL parameters
+  const { is_resolved } = await req.json(); // Corrected: Access params from context
 
   if (typeof is_resolved !== 'boolean') {
     return NextResponse.json({ message: 'Invalid is_resolved status' }, { status: 400 });

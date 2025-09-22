@@ -314,7 +314,7 @@ function OverviewCard({ title, value, unit }: { title: string; value: number; un
       <p className="text-2xl font-bold">
         {value !== undefined && value !== null ? value.toFixed(2) : "--"}
         <span className="text-lg">{unit}</span>
-      </p>
+      </p> 
     </div>
   );
 }

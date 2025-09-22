@@ -1,8 +1,8 @@
 // app/api/activity-log/route.ts
 // This API Route will fetch activity logs from your PostgreSQL database.
 
-import { NextResponse } from 'next/server';
-import pool from '@/lib/db'; // Adjust the path to your database utility - This is correct!
+import { NextResponse } from "next/server";
+import pool from "../../../../lib/db"; // Adjust the path to your database utility - This is correct!
 
 // Define an interface for the data structure of an activity log entry
 interface ActivityLogEntry {

@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { ChevronRight, MapPin, Globe, Building } from 'lucide-react';
-import NavbarComponent from '@/components/navbar';
+import NavbarComponent from '../../../components/navbar';
 
 // Interfaces สำหรับโครงสร้างข้อมูลที่คาดว่าจะได้รับจาก API
 interface DistrictDisplay {

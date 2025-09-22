@@ -1,6 +1,6 @@
 // app/api/regions/route.ts
 import { NextResponse } from "next/server";
-import { pool } from "@/lib/db"; // ใช้ export { pool } จาก lib/db
+import { pool } from "../../../../lib/db"; // ใช้ export { pool } จาก lib/db
 
 export async function GET() {
   if (!pool) {
